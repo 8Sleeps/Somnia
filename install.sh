@@ -20,6 +20,7 @@ BASE_URL="https://github.com/${REPO}/releases/download/v${VERSION}"
 DOWNLOAD_URL="${BASE_URL}/${FILENAME}"
 
 mkdir -p "/tmp/SomniaInstall"
+mkdir -p "/tmp/SomniaInstall/mnt"
 
 if [ -d "/Applications/${APP_NAME}.app" ]; then
   echo "Somnia is already installed. Removing old version..."
@@ -41,13 +42,13 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Mounting DMG..."
-hdiutil attach "/tmp/SomniaInstall/somnia.dmg" -mountpoint "/tmp/SomniaInstall/mnt" -quiet
+diskutil image attach "/tmp/SomniaInstall/somnia.dmg" --mountPoint "/tmp/SomniaInstall/mnt"
 
 echo "Installing Somnia..."
 ditto "/tmp/SomniaInstall/mnt/${APP_NAME}.app" "/Applications/${APP_NAME}.app"
 
 echo "Unmounting DMG..."
-hdiutil detach "/tmp/SomniaInstall/mnt" -quiet
+diskutil eject "/tmp/SomniaInstall/mnt" 2>/dev/null || true
 
 rm -rf "/tmp/SomniaInstall"
 clear
