@@ -1,0 +1,3837 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Somnia</title>
+  <style>
+    :root {
+      --spring: cubic-bezier(.16, 1, .3, 1);
+      --out: cubic-bezier(.16, 1, .3, 1);
+      --io: cubic-bezier(.22, 1, .36, 1);
+      --mute: #8d8fa8
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #15162a;
+      user-select: none;
+      -webkit-user-select: none
+    }
+
+    #bg {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: radial-gradient(120% 70% at 50% 100%, #3b2418, #15162a 70%)
+    }
+
+    #bg i {
+      position: absolute;
+      inset: -60px;
+      background: center/cover;
+      filter: blur(22px) brightness(.5) saturate(1.1);
+      opacity: 0;
+      transition: opacity .9s var(--io)
+    }
+
+    #bg i.on {
+      opacity: 1
+    }
+
+    #bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #1b1c31 0, rgba(27, 28, 49, .97) 14%, rgba(27, 28, 49, .86) 36%, rgba(20, 18, 28, .45) 62%, rgba(10, 10, 16, .55) 100%)
+    }
+
+    #stage {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      transform-origin: 0 0;
+      color: #fff;
+      font-family: "Builder Sans", "Gotham", "Inter", "Segoe UI", system-ui, sans-serif
+    }
+
+    .abs {
+      position: absolute
+    }
+
+    [data-i] {
+      display: block
+    }
+
+    [data-i] svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible
+    }
+
+    /* Intro animations use fill-mode "backwards" so they RELEASE the element afterwards and hover transforms still work */
+    .pop {
+      animation: pop .75s var(--spring) backwards;
+      animation-delay: calc(var(--i, 0)*55ms + 120ms)
+    }
+
+    .drop {
+      animation: drop .75s var(--spring) backwards;
+      animation-delay: calc(var(--i, 0)*65ms + 60ms)
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: translateY(22px) scale(.82)
+      }
+
+      to {
+        transform: none
+      }
+    }
+
+    @keyframes drop {
+      from {
+        opacity: 0;
+        transform: translateY(-26px)
+      }
+
+      to {
+        transform: none
+      }
+    }
+
+    @keyframes slideR {
+      from {
+        opacity: 0;
+        transform: translateX(140px) scale(.92)
+      }
+
+      to {
+        transform: none
+      }
+    }
+
+    @keyframes grow {
+      from {
+        transform: scaleX(0)
+      }
+
+      to {
+        transform: scaleX(1)
+      }
+    }
+
+    @keyframes swap {
+      from {
+        opacity: 0;
+        transform: translateY(16px)
+      }
+
+      to {
+        transform: none
+      }
+    }
+
+    @keyframes bob {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-9px)
+      }
+    }
+
+    @keyframes cdraw {
+      from {
+        stroke-dashoffset: 100;
+        opacity: 0
+      }
+
+      15% {
+        opacity: 1
+      }
+
+      to {
+        stroke-dashoffset: 0
+      }
+    }
+
+    /* Outline strokes: they sit OUTSIDE the object with a gap, are drawn with butt caps (no stray dot),
+   and animate through a transition so they draw in AND retract. pathLength=100 on every outline. */
+    .sk {
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: butt;
+      stroke-dasharray: 100 100;
+      stroke-dashoffset: 100;
+      transition: stroke-dashoffset .75s var(--io)
+    }
+
+    .ol {
+      position: absolute;
+      overflow: visible;
+      pointer-events: none
+    }
+
+    /* top bar */
+    #logo {
+      left: 65px;
+      top: 65px;
+      width: 48px;
+      height: 48px;
+      color: #e9eaf1;
+      cursor: pointer;
+      z-index: 10
+    }
+
+    #nav {
+      left: 154px;
+      top: 65px;
+      height: 48px;
+      display: flex;
+      gap: 41px;
+      align-items: center;
+      font-size: 24px;
+      font-weight: 500;
+      letter-spacing: .01em;
+      z-index: 10
+    }
+
+    #nav a {
+      color: var(--mute);
+      cursor: pointer;
+      position: relative;
+      transition: color .35s var(--io), transform .45s var(--spring)
+    }
+
+    #nav a.on,
+    #nav a:hover {
+      color: #fff
+    }
+
+    #nav a:hover {
+      color: #fff
+    }
+
+    #nav a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -9px;
+      height: 3px;
+      border-radius: 2px;
+      background: #fff;
+      transform: scaleX(0);
+      transition: transform .45s var(--out)
+    }
+
+    #nav a.on::after {
+      transform: scaleX(1)
+    }
+
+    #create {
+      position: relative;
+      margin-left: -14px;
+      width: 122px;
+      height: 48px;
+      border-radius: 24px;
+      background: #0e0f1d;
+      box-shadow: inset 0 0 0 1px #25263d;
+      color: #00a2ff;
+      font-weight: 700;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform .22s var(--out), background .3s
+    }
+
+    #create .ol {
+      left: -9px;
+      top: -9px;
+      width: 140px;
+      height: 66px
+    }
+
+    #create .sk {
+      stroke: #00a2ff;
+      transition-duration: .75s
+    }
+
+    #create:hover {
+      background: #161834;
+      box-shadow: inset 0 0 0 1px #00a2ff;
+      color: #38b6ff
+    }
+
+    #create:hover .sk {
+      stroke-dashoffset: 0
+    }
+
+    #right {
+      position: absolute;
+      right: 250px;
+      top: 65px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      z-index: 10
+    }
+
+    #robux {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 48px;
+      cursor: pointer;
+      flex: none
+    }
+
+    #rbi {
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      transition: transform .22s var(--out)
+    }
+
+    #rbi img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block
+    }
+
+    #rb {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: .02em;
+      color: #fff;
+      display: inline-block
+    }
+
+    #robux:hover #rbi {
+      transform: scale(1.06)
+    }
+
+    #robux:hover #rb {
+      color: #00e58b
+    }
+
+    #gear {
+      width: 38px;
+      height: 38px;
+      color: #8d8fa8;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex: none;
+      transition: transform .22s var(--out), color .2s
+    }
+
+    #gear:hover {
+      transform: rotate(25deg);
+      color: #fff
+    }
+
+    #gear svg {
+      width: 26px;
+      height: 26px;
+      display: block
+    }
+
+    #meWrap {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: none
+    }
+
+    #me {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #26273f center/cover;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, .1);
+      cursor: pointer;
+      transition: transform .22s var(--out), box-shadow .22s
+    }
+
+    #me:hover {
+      box-shadow: 0 0 0 2px #4d9fff;
+      transform: scale(1.04)
+    }
+
+    #meName {
+      position: absolute;
+      top: 54px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 96px;
+      text-align: center;
+      font-size: 11px;
+      color: #8d8fa8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none
+    }
+
+    #top-drag-region {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      z-index: 5;
+      pointer-events: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-app-region: drag
+    }
+
+    /* section labels */
+    .sec {
+      left: 64px;
+      width: 1856px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      color: #6d6f88
+    }
+
+    .sec s {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, #4a4c68, #34364f 65%, transparent 88%);
+      transform-origin: left;
+      animation: grow .8s var(--out) .3s backwards
+    }
+
+    #sec-friends,
+    #sec-discover {
+      top: 173px
+    }
+
+    #sec-recent {
+      top: 476px
+    }
+
+    /* friends */
+    #friends {
+      left: 64px;
+      top: 226px;
+      display: flex;
+      gap: 37px
+    }
+
+    .f {
+      width: 130px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      white-space: nowrap;
+      will-change: transform
+    }
+
+    .av {
+      position: relative;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: #1f2038 center/cover;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, .07), 0 10px 24px rgba(0, 0, 0, .25);
+      transition: transform .22s var(--out), box-shadow .4s
+    }
+
+    .av img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display: block
+    }
+
+    .av .ol {
+      left: -10px;
+      top: -10px;
+      width: 150px;
+      height: 150px;
+      transform: rotate(-90deg)
+    }
+
+    .av .sk {
+      stroke: #fff;
+      transition-duration: .75s
+    }
+
+    .f:hover .av {
+      transform: scale(1.035);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, .2), 0 8px 24px rgba(0, 0, 0, .4)
+    }
+
+    .f:hover .sk {
+      stroke-dashoffset: 0
+    }
+
+    .f:active .av {
+      transform: scale(.97);
+      transition-duration: .15s
+    }
+
+    .f b,
+    .f small {
+      transition: transform .22s var(--out)
+    }
+
+    .f b {
+      margin-top: 8px;
+      font-size: 19px;
+      font-weight: 600;
+      line-height: 22px;
+      color: #e9eaf1;
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: center
+    }
+
+    .f small {
+      font-size: 12px;
+      line-height: 16px;
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: center;
+      display: block;
+      transition: color .22s var(--io), transform .22s var(--out)
+    }
+
+    .f .f-handle {
+      color: #8d8fa8;
+      margin-top: 1px
+    }
+
+    .f .f-game {
+      margin-top: 2px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 15px;
+      letter-spacing: .01em
+    }
+
+    .f .f-game.in-game {
+      color: #00c577;
+      text-shadow: 0 0 8px rgba(0, 197, 119, .45)
+    }
+
+    .f .f-game.in-studio {
+      color: #ff8c00;
+      text-shadow: 0 0 8px rgba(255, 140, 0, .45)
+    }
+
+    .f[data-online="true"]:not([data-ingame="true"]):not([data-instudio="true"]) .f-handle {
+      color: #00a2ff
+    }
+
+    .f:hover b {
+      color: #fff
+    }
+
+    .f:hover .f-game.in-game {
+      color: #2be897
+    }
+
+    .f:hover .f-game.in-studio {
+      color: #ffa640
+    }
+
+    .join-pill {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: rgba(0, 176, 106, .55);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      color: #fff;
+      opacity: 0;
+      transform: scale(.88);
+      transition: opacity .22s var(--out), transform .22s var(--out);
+      pointer-events: none;
+      z-index: 4;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, .6)
+    }
+
+    .join-pill svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor
+    }
+
+    .f[data-ingame="true"]:hover .join-pill {
+      opacity: 1;
+      transform: scale(1)
+    }
+
+    .vb {
+      position: absolute;
+      right: -2px;
+      bottom: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0b6cff;
+      box-shadow: 0 0 0 2px #1b1c31;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      z-index: 3
+    }
+
+    .vb [data-i] {
+      width: 13px;
+      height: 13px
+    }
+
+    .vb g {
+      stroke-width: 3.4
+    }
+
+    /* Status outline: floats 5px outside avatar, inside hover ring without touching profile circle */
+    .status-ring {
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      pointer-events: none;
+      border: 2.5px solid transparent;
+      transition: border-color .4s cubic-bezier(.16, 1, .3, 1), box-shadow .4s cubic-bezier(.16, 1, .3, 1)
+    }
+
+    .f[data-online="true"]:not([data-ingame="true"]):not([data-instudio="true"]) .status-ring {
+      border-color: #00a2ff;
+      box-shadow: 0 0 10px rgba(0, 162, 255, .45)
+    }
+
+    .f[data-instudio="true"] .status-ring {
+      border-color: #ff8c00;
+      box-shadow: 0 0 10px rgba(255, 140, 0, .55)
+    }
+
+    .f[data-ingame="true"] .status-ring {
+      border-color: #00b06a;
+      box-shadow: 0 0 10px rgba(0, 176, 106, .5)
+    }
+
+    .f[data-online="false"] .status-ring {
+      border-color: rgba(255, 255, 255, .12);
+      box-shadow: none
+    }
+
+    .more .av {
+      display: grid;
+      place-items: center;
+      background: #262739;
+      text-align: center;
+      line-height: 1
+    }
+
+    .more strong {
+      display: block;
+      font-size: 34px;
+      font-weight: 700
+    }
+
+    .more em {
+      font-style: normal;
+      font-size: 14px;
+      color: #5b5d75;
+      font-weight: 600;
+      display: block;
+      margin-top: 4px;
+      letter-spacing: .04em
+    }
+
+    /* recently played */
+    #hd {
+      left: 65px;
+      top: 518px;
+      height: 96px
+    }
+
+    #hd h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 54px;
+      font-weight: 700;
+      display: flex;
+      align-items: center
+    }
+
+    #ico {
+      margin-right: 12px
+    }
+
+    #ico:empty {
+      display: none;
+      margin-right: 0
+    }
+
+    #hd p {
+      margin: 0;
+      font-size: 22px;
+      line-height: 30px;
+      color: #9a9cb2
+    }
+
+    #hd p span {
+      color: #d6d7e3;
+      font-weight: 500
+    }
+
+    .sw {
+      animation: swap .6s var(--spring) backwards
+    }
+
+    #rail {
+      left: 0;
+      top: 590px;
+      width: 1920px;
+      height: 330px;
+      pointer-events: none;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 44px);
+      mask-image: linear-gradient(90deg, transparent 0, #000 44px)
+    }
+
+    #track {
+      position: absolute;
+      left: 0;
+      top: 44px;
+      transition: transform .75s cubic-bezier(.22, 1, .36, 1)
+    }
+
+    /* each tile owns its outline, so the stroke always travels with the card */
+    .t {
+      position: absolute;
+      top: 0;
+      pointer-events: auto;
+      width: 392px;
+      height: 230px;
+      opacity: .93;
+      cursor: pointer;
+      transition: transform .22s var(--out), opacity .4s;
+      animation: slideR .85s var(--out) backwards;
+      animation-delay: calc(var(--i)*80ms + 330ms)
+    }
+
+    .t .c {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #34365a, #1d1e35) center/cover;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08)
+    }
+
+    .t img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block
+    }
+
+    .t .ol {
+      left: -10px;
+      top: -10px;
+      width: 412px;
+      height: 250px
+    }
+
+    .t .sk {
+      stroke: #d3d4e0;
+      transition-duration: .85s
+    }
+
+    .t:hover {
+      transform: translateY(-3px);
+      opacity: 1
+    }
+
+    .t.sel {
+      opacity: 1
+    }
+
+    .t.sel .sk {
+      stroke-dashoffset: 0
+    }
+
+    #play {
+      left: 64px;
+      top: 888px;
+      width: 135px;
+      height: 48px;
+      border-radius: 6px;
+      background: #00b06a;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform .22s var(--out), background .3s, box-shadow .4s;
+      overflow: hidden
+    }
+
+    #play:hover {
+      transform: translateY(-1px);
+      background: #00c577;
+      box-shadow: 0 6px 20px rgba(0, 176, 106, .35)
+    }
+
+    #play:active {
+      transform: scale(.95);
+      transition-duration: .12s
+    }
+
+    #play::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .28) 50%, transparent 65%);
+      transform: translateX(-120%)
+    }
+
+    #play:hover::before {
+      display: none
+    }
+
+    #age {
+      left: 380px;
+      top: 884px;
+      min-width: 84px;
+      width: auto;
+      text-align: right;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      color: #8d8fa8;
+      line-height: 14px;
+      white-space: nowrap;
+      transition: color .22s var(--io), opacity .22s var(--io)
+    }
+
+    /* discover */
+    #disc {
+      left: 0;
+      top: 945px;
+      width: 1920px;
+      text-align: center;
+      cursor: pointer
+    }
+
+    #disc b {
+      display: block;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: .01em;
+      line-height: 46px;
+      transition: transform .22s var(--out)
+    }
+
+    #disc [data-i] {
+      width: 40px;
+      height: 40px;
+      margin: 11px auto 0;
+      color: #8d8fa8;
+      transition: color .25s, transform .25s
+    }
+
+    #disc g {
+      stroke-width: 2.8
+    }
+
+    #disc path {
+      stroke-dasharray: 100 100;
+      animation: cdraw .6s var(--io) .9s backwards
+    }
+
+    #disc:hover {
+      color: #4d9fff
+    }
+
+    #disc:hover [data-i] {
+      color: #4d9fff;
+      transform: translateY(-2px)
+    }
+
+    /* ===== page views ===== */
+    .view {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      transition: opacity .5s var(--io), transform .7s var(--out), filter .5s var(--io), visibility 0s
+    }
+
+    .view:not(.off) .abs,
+    .view:not(.off) [data-click] {
+      pointer-events: auto
+    }
+
+    .view.off {
+      opacity: 0;
+      transform: translateY(28px) scale(.985);
+      filter: blur(6px);
+      visibility: hidden;
+      transition: opacity .4s var(--io), transform .5s var(--io), filter .4s var(--io), visibility 0s .5s
+    }
+
+    body.disc #bg i.on {
+      opacity: .52
+    }
+
+    #nav a[data-p] {
+      cursor: pointer
+    }
+
+    /* ===== discover ===== */
+    #dpage .sec s {
+      animation: none;
+      transition: transform .9s var(--out) .15s
+    }
+
+    #dpage.off .sec s {
+      transform: scaleX(0)
+    }
+
+    #chips {
+      left: 58px;
+      top: 206px;
+      width: 1410px;
+      height: 60px;
+      padding: 6px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      scroll-behavior: smooth;
+      cursor: grab;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--ml, 0px), #000 calc(100% - var(--mr, 0px)), transparent 100%);
+      mask-image: linear-gradient(90deg, transparent 0, #000 var(--ml, 0px), #000 calc(100% - var(--mr, 0px)), transparent 100%)
+    }
+
+    #chips::-webkit-scrollbar {
+      display: none
+    }
+
+    #chips.drag {
+      cursor: grabbing;
+      scroll-behavior: auto
+    }
+
+    #chipsIn {
+      position: relative;
+      display: flex;
+      gap: 12px;
+      width: max-content;
+      padding-right: 6px
+    }
+
+    #pill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 48px;
+      border-radius: 24px;
+      background: #fff;
+      opacity: 0;
+      transition: transform .6s var(--spring), width .6s var(--spring), opacity .3s
+    }
+
+    .chip {
+      position: relative;
+      z-index: 1;
+      height: 48px;
+      padding: 0 26px;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      font-size: 20px;
+      font-weight: 600;
+      color: #c3c5d8;
+      background: rgba(255, 255, 255, .07);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform .45s var(--spring), color .3s, background .4s
+    }
+
+    .chip:hover {
+      background: rgba(255, 255, 255, .12);
+      color: #fff
+    }
+
+    .chip.on {
+      color: #15162a;
+      background: transparent
+    }
+
+    .chip.on:hover {
+      color: #15162a
+    }
+
+    #sbox {
+      left: 1496px;
+      top: 212px;
+      width: 360px;
+      height: 48px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, .07);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px;
+      color: #9a9cb2;
+      transition: transform .22s var(--out), background .3s, color .3s
+    }
+
+    #sbox [data-i] {
+      width: 22px;
+      height: 22px;
+      flex: none
+    }
+
+    #sbox input {
+      flex: 1;
+      min-width: 0;
+      background: none;
+      border: 0;
+      outline: 0;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 500;
+      font-family: inherit
+    }
+
+    #sbox input::placeholder {
+      color: #7d7f98
+    }
+
+    #sbox .ol {
+      left: -9px;
+      top: -9px;
+      width: 378px;
+      height: 66px
+    }
+
+    #sbox .sk {
+      stroke: #d3d4e0
+    }
+
+    #sbox:hover {
+      background: rgba(255, 255, 255, .1);
+      color: #fff
+    }
+
+    #sbox:focus-within {
+      transform: scale(1.02);
+      color: #fff
+    }
+
+    #sbox:focus-within .sk {
+      stroke-dashoffset: 0
+    }
+
+    #gridWrap {
+      left: 0;
+      top: 276px;
+      width: 1920px;
+      height: 804px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 34px 64px 160px;
+      scrollbar-width: none;
+      scroll-behavior: smooth;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14px, #000 calc(100% - 110px), transparent 100%);
+      mask-image: linear-gradient(180deg, transparent 0, #000 14px, #000 calc(100% - 110px), transparent 100%)
+    }
+
+    #gridWrap::-webkit-scrollbar {
+      display: none
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(5, 336px);
+      column-gap: 28px;
+      row-gap: 44px;
+      transition: opacity .28s var(--io), filter .28s var(--io);
+      will-change: opacity
+    }
+
+    #grid.swap {
+      opacity: 0;
+      filter: blur(3px)
+    }
+
+    .g {
+      width: 336px;
+      cursor: pointer;
+      animation: pop .7s var(--spring) backwards;
+      animation-delay: calc(var(--i)*45ms)
+    }
+
+    .g .th {
+      position: relative;
+      width: 336px;
+      height: 189px;
+      transition: transform .22s var(--out)
+    }
+
+    .g .c {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #34365a, #1d1e35) center/cover;
+      transition: background .5s var(--io);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08)
+    }
+
+    .g .c img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      opacity: 0;
+      transition: opacity .5s var(--io)
+    }
+
+    .g .c img.go {
+      opacity: 1
+    }
+
+    .g .ol {
+      left: -10px;
+      top: -10px;
+      width: 356px;
+      height: 209px
+    }
+
+    .g .sk {
+      stroke: #d3d4e0;
+      transition-duration: .8s
+    }
+
+    .g:hover .th {
+      transform: translateY(-4px)
+    }
+
+    .g:hover .sk {
+      stroke-dashoffset: 0
+    }
+
+    .g.sel .th {
+      transform: translateY(-4px)
+    }
+
+    .g.sel .sk {
+      stroke-dashoffset: 0
+    }
+
+    .g:active .th {
+      transform: scale(.985);
+      transition-duration: .15s
+    }
+
+    .g .nm,
+    .g .mt {
+      transition: transform .22s var(--out)
+    }
+
+    .g .nm {
+      display: block;
+      margin-top: 14px;
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 24px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .g .mt {
+      display: flex;
+      gap: 18px;
+      margin-top: 4px;
+      height: 18px;
+      font-size: 14px;
+      color: #8d8fa8
+    }
+
+    .g .mt span {
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .g .mt [data-i] {
+      width: 15px;
+      height: 15px
+    }
+
+    .g .mt g {
+      stroke-width: 2.4
+    }
+
+    .g:hover .nm {
+      color: #fff
+    }
+
+    .g .pb {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 30px;
+      padding: 0 11px 0 8px;
+      border-radius: 9px;
+      background: rgba(20, 21, 36, .8);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16);
+      font-size: 16px;
+      font-weight: 700
+    }
+
+    .g .pb svg {
+      width: 17px;
+      height: 17px
+    }
+
+    #toast {
+      right: 64px;
+      top: 968px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      text-shadow: 0 4px 18px rgba(0, 0, 0, .55);
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap
+    }
+
+    #toastLogo {
+      width: 26px;
+      height: 26px;
+      color: #fff;
+      flex: none;
+      filter: drop-shadow(0 4px 14px rgba(0, 0, 0, .55))
+    }
+
+    #toastLogo svg {
+      display: block;
+      width: 100%;
+      height: 100%
+    }
+
+    #toast.on {
+      animation: toastShow 6s both
+    }
+
+    #toast.on #toastLogo {
+      animation: toastSpin 2.3s var(--io) infinite
+    }
+
+    @keyframes toastShow {
+      0% {
+        opacity: 0;
+        transform: translateX(68px) scale(.94)
+      }
+
+      9% {
+        opacity: 1;
+        transform: none;
+        animation-timing-function: var(--spring)
+      }
+
+      85% {
+        opacity: 1;
+        transform: none
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(52px) scale(.97)
+      }
+    }
+
+    @keyframes toastSpin {
+      0% {
+        transform: rotate(0deg)
+      }
+
+      42% {
+        transform: rotate(360deg)
+      }
+
+      100% {
+        transform: rotate(360deg)
+      }
+    }
+
+    /* ===== Update banner ===== */
+    #updateBanner {
+      position: fixed;
+      bottom: -72px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #1e2040, #252848);
+      border: 1px solid rgba(109, 130, 255, .35);
+      border-radius: 12px;
+      padding: 10px 16px;
+      color: #c8cbff;
+      font-size: 13px;
+      font-family: inherit;
+      z-index: 9999;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      transition: bottom .45s var(--spring);
+      white-space: nowrap;
+    }
+
+    #updateBanner.on {
+      bottom: 20px;
+    }
+
+    #updateBanner svg {
+      flex-shrink: 0;
+      color: #7d9bff;
+    }
+
+    #updateMsg {
+      flex: 1;
+    }
+
+    #updateBtn {
+      background: linear-gradient(135deg, #5b79ff, #8f5fff);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 600;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+
+    #updateBtn:hover { opacity: .85; }
+    #updateBtn:disabled { opacity: .5; cursor: default; }
+
+    #updateDismiss {
+      background: none;
+      border: none;
+      color: #6b6e90;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 2px 4px;
+      line-height: 1;
+      transition: color .2s;
+    }
+
+    #updateDismiss:hover { color: #a0a3c8; }
+
+    .g.ld {
+      cursor: default
+    }
+
+    .g.ld .c {
+      animation: pulse 1.3s var(--io) infinite;
+      animation-delay: calc(var(--i)*80ms)
+    }
+
+    .g.ld .nm {
+      width: 70%;
+      height: 16px;
+      margin-top: 18px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .08)
+    }
+
+    .g.ld .mt {
+      width: 40%;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, .05)
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: .55
+      }
+
+      50% {
+        opacity: 1
+      }
+    }
+
+    #empty {
+      grid-column: 1/-1;
+      padding: 120px 0;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 600;
+      color: #9a9cb2;
+      line-height: 34px
+    }
+
+    #empty small {
+      display: block;
+      font-size: 16px;
+      font-weight: 500;
+      color: #6d6f88
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-delay: 0s !important;
+        transition-duration: .01ms !important
+      }
+    }
+
+/* ===== profile ===== */
+body.prof #bg i.on{opacity:.6}
+#ppage .sec s{animation:none;transition:transform .9s var(--out) .15s}
+#ppage.off .sec s{transform:scaleX(0)}
+#ppage .sec span em{font-style:normal;color:#8d8fa8}
+
+/* hero: 3D avatar over a soft disc, status ring + hover outline */
+#pAv{left:64px;top:214px;width:520px;height:440px;display:flex;align-items:center;justify-content:center;cursor:default}
+#pDisc{position:relative;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle at 50% 36%,rgba(255,255,255,.14),rgba(255,255,255,.045) 62%,rgba(255,255,255,.02));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 28px 60px rgba(0,0,0,.35);transition:transform .5s var(--spring)}
+#pAv:hover #pDisc{transform:scale(1.015)}
+#pAv[data-online="true"] .status-ring{border-color:#00a2ff;box-shadow:0 0 14px rgba(0,162,255,.45)}
+#pAv[data-instudio="true"] .status-ring{border-color:#ff8c00;box-shadow:0 0 14px rgba(255,140,0,.55)}
+#pAv[data-ingame="true"] .status-ring{border-color:#00b06a;box-shadow:0 0 14px rgba(0,176,106,.5)}
+#pAv[data-online="false"] .status-ring{border-color:rgba(255,255,255,.12);box-shadow:none}
+#pDisc .sk{stroke:#fff;transition-duration:.9s}
+#pAv:hover #pDisc .sk{stroke-dashoffset:0}
+#pRend{position:absolute;left:-15px;right:-15px;bottom:-10px;height:450px;pointer-events:none;filter:drop-shadow(0 20px 26px rgba(0,0,0,.45));transition:opacity .5s var(--io)}
+#pRend img{width:100%;height:100%;object-fit:contain;display:block;animation:pop .45s var(--spring)}
+
+
+/* identity */
+#pName{left:64px;top:668px;width:520px}
+#pName h1{margin:0;font-size:44px;line-height:54px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;white-space:nowrap}
+#pDN{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.pvb{display:grid;place-items:center;flex:none;width:30px;height:30px;margin-left:12px;border-radius:50%;background:#0b6cff;color:#fff}
+.pvb [data-i]{width:18px;height:18px}.pvb g{stroke-width:3.4}
+#pHandle{font-size:22px;line-height:28px;color:#9a9cb2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pStat{margin-top:4px;font-size:17px;line-height:24px;font-weight:700;color:#8d8fa8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pStat.in-game{color:#00c577;text-shadow:0 0 8px rgba(0,197,119,.45)}
+#pStat.in-studio{color:#ff8c00;text-shadow:0 0 8px rgba(255,140,0,.45)}
+#pStat.online{color:#00a2ff}
+#pAbout{margin:14px 0 0;font-size:17px;line-height:24px;color:#9a9cb2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#pStats{left:64px;top:866px;display:flex;gap:44px}
+#pStats b{display:block;font-size:30px;line-height:34px;font-weight:800}
+#pStats span{display:block;margin-top:2px;font-size:12px;font-weight:700;letter-spacing:.07em;color:#6d6f88}
+#pBtns{left:64px;top:954px;display:flex;gap:12px;align-items:center}
+.pbtn{height:48px;padding:0 24px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:18px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.08);color:#e9eaf1;transition:transform .22s var(--out),background .3s,box-shadow .4s,color .3s}
+.pbtn [data-i]{width:20px;height:20px}
+.pbtn:hover{transform:translateY(-1px);background:rgba(255,255,255,.14);color:#fff}
+.pbtn:active{transform:scale(.95);transition-duration:.12s}
+.pbtn.r{width:48px;padding:0;border-radius:50%}
+.pbtn.jn{background:#00b06a;color:#fff;padding:0 34px}
+.pbtn.jn:hover{background:#00c577;box-shadow:0 6px 20px rgba(0,176,106,.35)}
+
+/* right column scrolls; extra room around it so hover outlines are never clipped */
+#pScroll{left:628px;top:150px;width:1292px;height:930px;padding:23px 64px 200px 12px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;scroll-behavior:smooth;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 18px,#000 calc(100% - 120px),transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 18px,#000 calc(100% - 120px),transparent 100%)}
+#pScroll::-webkit-scrollbar{display:none}
+.psec{margin-bottom:46px}
+.psec .sec{position:relative;left:0;width:100%;margin-bottom:25px}
+
+/* shared card behaviour: outline strokes + spring hover, same as tiles */
+.pc{position:relative;cursor:pointer;animation:pop .7s var(--spring) backwards;animation-delay:calc(var(--i,0)*55ms + 120ms);transition:transform .22s var(--out)}
+.pc .c{position:absolute;inset:0;border-radius:20px;overflow:hidden;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);transition:background .3s}
+.pc .sk{stroke:#d3d4e0;transition-duration:.8s}
+.pc:hover .sk{stroke-dashoffset:0}
+.pc:active{transform:scale(.985);transition-duration:.15s}
+.pc.ld{cursor:default}
+.pc.ld .c,.pc.ld .bi,.f.ld .av{animation:pulse 1.3s var(--io) infinite;animation-delay:calc(var(--i,0)*80ms)}
+#pFriends{display:flex;gap:37px;min-height:196px}
+.f.ld{cursor:default}
+.f.ld b{display:block;width:84px;height:16px;margin-top:14px;border-radius:8px;background:rgba(255,255,255,.08)}
+#pCreations{display:grid;grid-template-columns:repeat(4,284px);gap:36px 26px;min-height:200px}
+#pGroups{display:grid;grid-template-columns:repeat(4,284px);gap:26px;min-height:104px}
+#pItems{display:grid;grid-template-columns:repeat(5,216px);gap:34px;min-height:280px}
+#pBadges{display:grid;grid-template-columns:repeat(8,136px);gap:18px;min-height:170px}
+.pe{grid-column:1/-1;padding:30px 0;display:flex;align-items:center;gap:12px;font-size:20px;font-weight:600;color:#9a9cb2}
+.pe [data-i]{width:24px;height:24px;color:#6d6f88}
+
+/* creations */
+.cr{width:284px}
+.cr .th{position:relative;width:284px;height:160px;transition:transform .22s var(--out)}
+.cr:hover .th,.cr.sel .th{transform:translateY(-4px)}
+.cr.sel .sk{stroke-dashoffset:0}
+.cr .c{background:linear-gradient(135deg,#34365a,#1d1e35) center/cover}
+.cr .c img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s var(--io)}
+.cr .c img.go{opacity:1}
+.cr .nm{display:block;margin-top:14px;font-size:18px;line-height:22px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr .mt{display:flex;gap:16px;margin-top:4px;height:18px;font-size:14px;color:#8d8fa8}
+.cr .mt span{display:flex;align-items:center;gap:6px}
+.cr .mt [data-i]{width:15px;height:15px}.cr .mt g{stroke-width:2.4}
+.cr.ld .nm{width:70%;height:16px;margin-top:18px;border-radius:8px;background:rgba(255,255,255,.08)}
+
+/* groups */
+.gc{width:284px;height:104px}
+.gc:hover{transform:translateY(-3px)}
+.gc .gi{position:absolute;left:20px;top:20px;width:64px;height:64px;border-radius:16px;overflow:hidden;display:grid;place-items:center;font-size:28px;font-weight:800;background:rgba(255,255,255,.08)}
+.gc .gi img{width:100%;height:100%;object-fit:cover;display:block}
+.gc .gt{position:absolute;left:100px;top:22px;right:16px}
+.gc .gt b{display:block;font-size:18px;line-height:22px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc .gt small{display:block;font-size:14px;line-height:19px;color:#9a9cb2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc .gt small.m{font-size:13px;color:#6d6f88}
+
+/* collectibles */
+.ic{width:216px}
+.ic .th{position:relative;width:216px;height:216px;transition:transform .22s var(--out)}
+.ic:hover .th{transform:translateY(-4px)}
+.ic .c{background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.12),rgba(255,255,255,.03))}
+.ic .c img{width:100%;height:100%;object-fit:contain;padding:18px;display:block}
+.ic .ph{position:absolute;inset:0;display:grid;place-items:center}
+.ic .ph svg{width:64px;height:64px;opacity:.35}
+.ic .pb{position:absolute;right:10px;bottom:10px;display:flex;align-items:center;gap:6px;height:30px;padding:0 11px 0 8px;border-radius:9px;background:rgba(20,21,36,.8);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);font-size:16px;font-weight:700}
+.ic .pb svg{width:17px;height:17px}
+.ic .sn{position:absolute;left:10px;top:10px;height:24px;padding:0 9px;border-radius:8px;display:flex;align-items:center;background:rgba(20,21,36,.8);font-size:13px;font-weight:700;color:#d6d7e3}
+.ic .nm{display:block;margin-top:14px;font-size:18px;line-height:22px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ic .mt{margin-top:2px;height:18px;font-size:14px;color:#8d8fa8}
+.ic.ld .nm{width:70%;height:16px;margin-top:18px;border-radius:8px;background:rgba(255,255,255,.08)}
+
+/* badges */
+.bd{width:136px;text-align:center}
+.bd .bi{position:relative;width:112px;height:112px;margin:0 auto;border-radius:50%;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 10px 24px rgba(0,0,0,.25);transition:transform .22s var(--out)}
+.bd .bi img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.bd .bi span{position:absolute;inset:0;display:grid;place-items:center;font-size:40px}
+.bd:hover .bi{transform:scale(1.035)}
+.bd .sk{stroke:#fff}
+.bd b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:38px;margin-top:14px;font-size:15px;line-height:19px;font-weight:600;color:#e9eaf1}
+.bd small{display:block;margin-top:2px;font-size:12px;font-weight:600;color:#6d6f88}
+.bd.ld b{height:14px;margin:18px 20px 0;border-radius:7px;background:rgba(255,255,255,.08);display:block}
+
+
+    /* ===== Login Overlay ===== */
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      overflow: hidden;
+      background: #15162a;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: "Builder Sans", "Gotham", "Inter", "Segoe UI", system-ui, sans-serif;
+      transition: opacity .5s var(--io), visibility .5s
+    }
+
+    #loginOverlay.gone {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none
+    }
+
+    #loginBg {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: radial-gradient(120% 70% at 50% 100%, #3b2418, #15162a 70%)
+    }
+
+    #loginBg b {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: .5;
+      animation: loginDrift 18s var(--io) infinite alternate
+    }
+
+    #loginBg b:nth-child(1) {
+      width: 620px;
+      height: 620px;
+      left: -120px;
+      top: 38%;
+      background: #7a2c14
+    }
+
+    #loginBg b:nth-child(2) {
+      width: 560px;
+      height: 560px;
+      right: -100px;
+      top: -120px;
+      background: #1c3a6e;
+      animation-delay: -6s
+    }
+
+    #loginBg b:nth-child(3) {
+      width: 480px;
+      height: 480px;
+      left: 46%;
+      bottom: -200px;
+      background: #2a5a3c;
+      opacity: .35;
+      animation-delay: -11s
+    }
+
+    @keyframes loginDrift {
+      from {
+        transform: translate(0, 0) scale(1)
+      }
+
+      to {
+        transform: translate(60px, -40px) scale(1.15)
+      }
+    }
+
+    #loginBg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #1b1c31 0, rgba(27, 28, 49, .9) 16%, rgba(27, 28, 49, .6) 50%, rgba(10, 10, 16, .6) 100%)
+    }
+
+    #loginStage {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      transform-origin: 0 0;
+      color: #fff
+    }
+
+    /* top bar */
+    #lLogo {
+      left: 65px;
+      top: 65px;
+      width: 48px;
+      height: 48px;
+      color: #e9eaf1;
+      cursor: pointer;
+      z-index: 10
+    }
+
+    #lTag {
+      left: 154px;
+      top: 65px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      font-size: 24px;
+      font-weight: 500;
+      color: #fff;
+      letter-spacing: .01em
+    }
+
+    #lTag::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -2px;
+      height: 3px;
+      border-radius: 2px;
+      background: #fff
+    }
+
+    #lTagR {
+      right: 64px;
+      top: 65px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #6f7188
+    }
+
+    #lDot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #6f7188;
+      transition: background .4s, box-shadow .4s
+    }
+
+    #lDot.ok {
+      background: #00b06a;
+      box-shadow: 0 0 12px #00b06a
+    }
+
+    #lDot.bad {
+      background: #ff5a5a;
+      box-shadow: 0 0 12px #ff5a5a
+    }
+
+    /* section labels */
+    .lSec {
+      left: 64px;
+      width: 1856px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      color: #6d6f88
+    }
+
+    .lSec s {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, #4a4c68, #34364f 65%, transparent 88%);
+      transform-origin: left;
+      animation: grow .8s var(--out) .3s backwards
+    }
+
+    /* heading */
+    #lHd {
+      left: 65px;
+      top: 262px;
+      width: 900px
+    }
+
+    #lHd h1 {
+      margin: 0;
+      font-size: 64px;
+      line-height: 76px;
+      font-weight: 800;
+      letter-spacing: -.01em
+    }
+
+    #lHd p {
+      margin: 14px 0 0;
+      font-size: 24px;
+      line-height: 34px;
+      color: #9a9cb2
+    }
+
+    #lHd p span {
+      color: #d6d7e3;
+      font-weight: 500
+    }
+
+    /* cookie input */
+    #lField {
+      left: 64px;
+      top: 518px;
+      width: 900px;
+      height: 72px;
+      border-radius: 36px;
+      background: rgba(255, 255, 255, .07);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 14px 0 28px;
+      color: #9a9cb2;
+      transition: transform .22s var(--out), background .3s, color .3s
+    }
+
+    #lField>[data-i] {
+      width: 26px;
+      height: 26px;
+      flex: none
+    }
+
+    #lField input {
+      flex: 1;
+      min-width: 0;
+      background: none;
+      border: 0;
+      outline: 0;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 500;
+      font-family: inherit;
+      letter-spacing: .02em
+    }
+
+    #lField input::placeholder {
+      color: #7d7f98;
+      letter-spacing: 0
+    }
+
+    #lField .ol {
+      left: -9px;
+      top: -9px;
+      width: 918px;
+      height: 90px
+    }
+
+    #lField .sk {
+      stroke: #d3d4e0
+    }
+
+    #lField:hover {
+      background: rgba(255, 255, 255, .1);
+      color: #fff
+    }
+
+    #lField:focus-within {
+      transform: scale(1.015);
+      color: #fff;
+      background: rgba(255, 255, 255, .1)
+    }
+
+    #lField:focus-within .sk {
+      stroke-dashoffset: 0
+    }
+
+    #lField.bad .sk {
+      stroke: #ff5a5a;
+      stroke-dashoffset: 0
+    }
+
+    #lField.bad {
+      animation: shake .5s var(--out)
+    }
+
+    #lField.ok .sk {
+      stroke: #00b06a;
+      stroke-dashoffset: 0
+    }
+
+    #lEye,
+    #lPaste {
+      flex: none;
+      height: 44px;
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      color: #9a9cb2;
+      background: rgba(255, 255, 255, .07);
+      cursor: pointer;
+      transition: transform .22s var(--out), background .3s, color .3s
+    }
+
+    #lEye {
+      width: 44px
+    }
+
+    #lPaste {
+      padding: 0 18px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: .03em
+    }
+
+    #lEye [data-i] {
+      width: 22px;
+      height: 22px
+    }
+
+    #lEye:hover,
+    #lPaste:hover {
+      background: rgba(255, 255, 255, .14);
+      color: #fff
+    }
+
+    #lEye:active,
+    #lPaste:active {
+      transform: scale(.94);
+      transition-duration: .12s
+    }
+
+    #lMsg {
+      left: 92px;
+      top: 618px;
+      width: 860px;
+      height: 24px;
+      font-size: 17px;
+      font-weight: 600;
+      color: #ff7b7b;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity .35s var(--io), transform .5s var(--spring)
+    }
+
+    #lMsg.on {
+      opacity: 1;
+      transform: none
+    }
+
+    /* buttons */
+    #lGo {
+      left: 64px;
+      top: 672px;
+      width: 190px;
+      height: 56px;
+      border-radius: 6px;
+      background: #00b06a;
+      font-size: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform .22s var(--out), background .3s, box-shadow .4s, opacity .3s
+    }
+
+    #lGo:hover {
+      transform: translateY(-1px);
+      background: #00c577;
+      box-shadow: 0 6px 18px rgba(0, 176, 106, .35)
+    }
+
+    #lGo:active {
+      transform: scale(.95);
+      transition-duration: .12s
+    }
+
+    #lGo::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .28) 50%, transparent 65%);
+      transform: translateX(-120%)
+    }
+
+    #lGo:hover::before {
+      display: none
+    }
+
+    #lGo.busy {
+      pointer-events: none;
+      opacity: .85
+    }
+
+    #lGo i {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, .35);
+      border-top-color: #fff;
+      animation: spin .8s linear infinite
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    #lGo.busy i {
+      display: block
+    }
+
+    #lNote {
+      left: 282px;
+      top: 672px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      line-height: 18px;
+      color: #7b7d94;
+      width: 620px
+    }
+
+    #lNote [data-i] {
+      width: 18px;
+      height: 18px;
+      flex: none
+    }
+
+    /* steps */
+    #lSteps {
+      left: 1120px;
+      top: 262px;
+      width: 736px
+    }
+
+    .lst {
+      position: relative;
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      height: 112px;
+      padding: 0 28px;
+      margin-bottom: 18px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .06);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+      animation: slideR .85s var(--out) backwards;
+      animation-delay: calc(var(--i)*90ms + 330ms);
+      transition: transform .22s var(--out), background .3s
+    }
+
+    .lst .ol {
+      left: -10px;
+      top: -10px;
+      width: 756px;
+      height: 132px
+    }
+
+    .lst .sk {
+      stroke: #d3d4e0;
+      transition-duration: .85s
+    }
+
+    .lst:hover {
+      transform: scale(1.03);
+      background: rgba(255, 255, 255, .09)
+    }
+
+    .lst:hover .sk {
+      stroke-dashoffset: 0
+    }
+
+    .lst em {
+      flex: none;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #fff;
+      color: #15162a;
+      font-style: normal;
+      font-weight: 800;
+      font-size: 24px;
+      display: grid;
+      place-items: center
+    }
+
+    .lst b {
+      display: block;
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 28px
+    }
+
+    .lst small {
+      display: block;
+      margin-top: 2px;
+      font-size: 16px;
+      line-height: 22px;
+      color: #8d8fa8
+    }
+
+    .lst code {
+      font-family: inherit;
+      color: #d6d7e3;
+      font-weight: 600
+    }
+
+    #lWarn {
+      left: 1120px;
+      top: 808px;
+      width: 736px;
+      display: flex;
+      gap: 14px;
+      font-size: 15px;
+      line-height: 21px;
+      color: #7b7d94
+    }
+
+    #lWarn [data-i] {
+      width: 20px;
+      height: 20px;
+      flex: none;
+      margin-top: 1px;
+      color: #9a9cb2
+    }
+
+    #lFade {
+      position: absolute;
+      inset: 0;
+      background: #15162a;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .55s var(--io)
+    }
+
+    #lFade.on {
+      opacity: 1
+    }
+
+    /* window controls in top right */
+    #win-controls {
+      position: fixed;
+      top: 16px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 10000;
+      opacity: .38;
+      transition: opacity .25s var(--io, ease)
+    }
+
+    #win-controls:hover {
+      opacity: 1
+    }
+
+    .win-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #fff;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      padding: 0;
+      transition: background .2s, transform .2s, color .2s
+    }
+
+    .win-btn svg {
+      width: 16px;
+      height: 16px;
+      display: block
+    }
+
+    .win-btn:hover {
+      background: rgba(255, 255, 255, .14);
+      transform: scale(1.08)
+    }
+
+    .win-btn:active {
+      transform: scale(.92)
+    }
+
+    #win-close:hover {
+      background: rgba(255, 75, 75, .28);
+      color: #ff5a5a
+    }
+  </style>
+</head>
+
+<body>
+  <div id="win-controls">
+    <button class="win-btn" id="win-min" title="Minimize">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none" />
+        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M20 12H4" />
+      </svg>
+    </button>
+    <button class="win-btn" id="win-max" title="Resize">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 36 36">
+        <path d="M0 0h36v36H0z" fill="none" />
+        <path fill="currentColor"
+          d="M19 4a1 1 0 0 0 0 2h9.59l-9.25 9.25a1 1 0 1 0 1.41 1.41L30 7.41V17a1 1 0 0 0 2 0V4Z" />
+        <path fill="currentColor"
+          d="M4 19a1 1 0 0 1 2 0v9.59l9.25-9.25a1 1 0 1 1 1.41 1.41L7.41 30H17a1 1 0 0 1 0 2H4Z" />
+        <path fill="none" d="M0 0h36v36H0z" />
+      </svg>
+    </button>
+    <button class="win-btn" id="win-close" title="Close">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none" />
+        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="m21 21l-9-9m0 0L3 3m9 9l9-9m-9 9l-9 9" />
+      </svg>
+    </button>
+  </div>
+  <!-- ===== Login Overlay ===== -->
+  <div id="loginOverlay">
+    <div id="loginBg"><b></b><b></b><b></b></div>
+    <div id="loginStage">
+      <div class="abs" data-tauri-drag-region
+        style="left:0;top:0;width:1920px;height:120px;z-index:1;pointer-events:auto;"></div>
+      <div id="lLogo" class="abs drop" data-i="simple-icons:roblox" title="Somnia"></div>
+      <div id="lTag" class="abs drop" style="--i:1">Sign In</div>
+      <div id="lTagR" class="abs drop" style="--i:3"><span id="lDot"></span><span id="lStatus">Not connected</span>
+      </div>
+
+      <div class="lSec abs" style="top:173px">ACCOUNT<s></s></div>
+
+      <div id="lHd" class="abs pop" style="--i:1">
+        <h1>Connect your account</h1>
+        <p>Paste your <span>.ROBLOSECURITY</span> cookie to load your friends, Robux and recently played experiences.
+        </p>
+      </div>
+
+      <div id="lField" class="abs pop" style="--i:3">
+        <div data-i="lucide:key-round"></div>
+        <input id="lCk" type="password" placeholder="_|WARNING:-DO-NOT-SHARE-THIS..." spellcheck="false"
+          autocomplete="off" autocapitalize="off">
+        <div id="lPaste">Paste</div>
+        <div id="lEye">
+          <div data-i="lucide:eye"></div>
+        </div>
+        <svg class="ol" viewBox="0 0 918 90">
+          <rect class="sk" x="1.5" y="1.5" width="915" height="87" rx="43.5" pathLength="100" />
+        </svg>
+      </div>
+      <div id="lMsg" class="abs">That doesn't look like a valid cookie.</div>
+
+      <div id="lGo" class="abs pop" style="--i:5"><i></i><span id="lGoT">Continue</span></div>
+      <div id="lNote" class="abs pop" style="--i:5">
+        <div data-i="lucide:lock"></div><span>Stored only on this device. It's sent to Roblox and nowhere else.</span>
+      </div>
+
+      <div class="lSec abs" style="top:226px;left:1120px;width:800px">HOW TO FIND IT<s></s></div>
+      <div id="lSteps" class="abs" style="top:262px">
+        <div class="lst" style="--i:0"><em>1</em>
+          <div><b>Open roblox.com and sign in</b><small>Use the browser where you're already logged in.</small></div>
+          <svg class="ol" viewBox="0 0 756 132">
+            <rect class="sk" x="1.5" y="1.5" width="753" height="129" rx="28.5" pathLength="100" />
+          </svg>
+        </div>
+        <div class="lst" style="--i:1"><em>2</em>
+          <div><b>Open developer tools</b><small>Press <code>F12</code>, then go to <code>Application</code> (Chrome) or
+              <code>Storage</code> (Firefox).</small></div><svg class="ol" viewBox="0 0 756 132">
+            <rect class="sk" x="1.5" y="1.5" width="753" height="129" rx="28.5" pathLength="100" />
+          </svg>
+        </div>
+        <div class="lst" style="--i:2"><em>3</em>
+          <div><b>Find the cookie</b><small>Open <code>Cookies</code> › <code>roblox.com</code> and look for
+              <code>.ROBLOSECURITY</code>.</small></div><svg class="ol" viewBox="0 0 756 132">
+            <rect class="sk" x="1.5" y="1.5" width="753" height="129" rx="28.5" pathLength="100" />
+          </svg>
+        </div>
+        <div class="lst" style="--i:3"><em>4</em>
+          <div><b>Copy the value</b><small>Double-click the value, copy it, and paste it here.</small></div><svg
+            class="ol" viewBox="0 0 756 132">
+            <rect class="sk" x="1.5" y="1.5" width="753" height="129" rx="28.5" pathLength="100" />
+          </svg>
+        </div>
+      </div>
+      <div id="lWarn" class="abs pop" style="--i:9">
+        <div data-i="lucide:shield-alert"></div><span>Anyone with this cookie can access your account. Never share it,
+          and log out of Roblox in your browser if you think it leaked.</span>
+      </div>
+
+      <div id="lFade"></div>
+    </div>
+  </div>
+  <div id="bg"><i></i><i></i></div>
+  <div id="top-drag-region" data-tauri-drag-region
+    style="position:fixed;top:0;left:0;right:0;height:65px;z-index:2;pointer-events:auto;"></div>
+  <div id="stage">
+    <div id="stage-drag-region" class="abs" data-tauri-drag-region
+      style="left:0;top:0;width:1920px;height:120px;z-index:1;pointer-events:auto;"></div>
+    <div id="logo" class="abs drop" data-i="simple-icons:roblox"></div>
+    <nav id="nav" class="abs"><a class="on drop" style="--i:1" data-p="home">Home</a><a class="drop" style="--i:2"
+        data-p="discover">Discover</a><a class="drop" style="--i:3">Marketplace</a>
+      <div id="create" class="drop" style="--i:4">Create<svg class="ol" viewBox="0 0 140 66">
+          <rect class="sk" x="1.500" y="1.500" width="137" height="63" rx="31.500" pathLength="100" />
+        </svg></div>
+    </nav>
+
+
+    <div id="right">
+      <div id="robux" class="drop" style="--i:3"><span id="rbi"></span><span id="rb">1B+</span></div>
+      <div id="gear" class="drop" style="--i:4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36">
+          <path fill="currentColor"
+            d="M18.1 11c-3.9 0-7 3.1-7 7s3.1 7 7 7s7-3.1 7-7s-3.1-7-7-7m0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5s5 2.2 5 5s-2.2 5-5 5" />
+          <path fill="currentColor"
+            d="m32.8 14.7l-2.8-.9l-.6-1.5l1.4-2.6c.3-.6.2-1.4-.3-1.9l-2.4-2.4c-.5-.5-1.3-.6-1.9-.3l-2.6 1.4l-1.5-.6l-.9-2.8C21 2.5 20.4 2 19.7 2h-3.4c-.7 0-1.3.5-1.4 1.2L14 6c-.6.1-1.1.3-1.6.6L9.8 5.2c-.6-.3-1.4-.2-1.9.3L5.5 7.9c-.5.5-.6 1.3-.3 1.9l1.3 2.5c-.2.5-.4 1.1-.6 1.6l-2.8.9c-.6.2-1.1.8-1.1 1.5v3.4c0 .7.5 1.3 1.2 1.5l2.8.9l.6 1.5l-1.4 2.6c-.3.6-.2 1.4.3 1.9l2.4 2.4c.5.5 1.3.6 1.9.3l2.6-1.4l1.5.6l.9 2.9c.2.6.8 1.1 1.5 1.1h3.4c.7 0 1.3-.5 1.5-1.1l.9-2.9l1.5-.6l2.6 1.4c.6.3 1.4.2 1.9-.3l2.4-2.4c.5-.5.6-1.3.3-1.9l-1.4-2.6l.6-1.5l2.9-.9c.6-.2 1.1-.8 1.1-1.5v-3.4c0-.7-.5-1.4-1.2-1.6m-.8 4.7l-3.6 1.1l-.1.5l-.9 2.1l-.3.5l1.8 3.3l-2 2l-3.3-1.8l-.5.3q-1.05.6-2.1.9l-.5.1l-1.1 3.6h-2.8l-1.1-3.6l-.5-.1l-2.1-.9l-.5-.3l-3.3 1.8l-2-2l1.8-3.3l-.3-.5Q8 22.05 7.7 21l-.1-.5L4 19.4v-2.8l3.4-1l.2-.5c.2-.8.5-1.5.9-2.2l.3-.5l-1.7-3.3l2-2l3.2 1.8l.5-.3c.7-.4 1.4-.7 2.2-.9l.5-.2L16.6 4h2.8l1.1 3.5l.5.2q1.05.3 2.1.9l.5.3l3.3-1.8l2 2l-1.8 3.3l.3.5q.6 1.05.9 2.1l.1.5l3.6 1.1z" />
+        </svg></div>
+      <div id="meWrap" class="drop" style="--i:5">
+        <div id="me"></div>
+        <div id="meName">username</div>
+      </div>
+    </div>
+
+    <div id="toast" class="abs">
+      <div id="toastLogo" data-i="simple-icons:roblox"></div><span id="toastMsg">LAUNCHING...</span>
+    </div>
+    <!-- Update banner -->
+    <div id="updateBanner">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span id="updateMsg">Update available</span>
+      <button id="updateBtn">Update &amp; Restart</button>
+      <button id="updateDismiss">✕</button>
+    </div>
+    <div id="home" class="view">
+      <div id="sec-friends" class="sec abs">FRIENDS LIST<s></s></div>
+      <div id="friends" class="abs"></div>
+
+      <div id="sec-recent" class="sec abs">RECENTLY PLAYED<s></s></div>
+      <div id="hd" class="abs">
+        <h1><span id="ico">🌴</span><span id="ttl">Outlaster</span></h1>
+        <p id="by">By <span>Peak Precision Studios</span></p>
+      </div>
+
+      <div id="rail" class="abs">
+        <div id="track"></div>
+      </div>
+      <div id="play" class="abs pop" style="--i:12">Quick Play</div>
+      <div id="age" class="abs pop" style="--i:12">All Ages</div>
+
+      <div id="disc" class="abs pop" style="--i:14"><b>DISCOVER MORE EXPERIENCES</b>
+        <div data-i="lucide:chevron-up"></div>
+      </div>
+    </div>
+
+<div id="ppage" class="view off">
+    <div id="sec-prof" class="sec abs" style="top:173px;left:64px;width:520px">PROFILE<s></s></div>
+    <div id="pAv" class="abs">
+      <div id="pDisc">
+        <div class="status-ring"></div>
+        <div id="pRend"></div>
+        <svg class="ol" style="left:-10px;top:-10px;width:440px;height:440px;transform:rotate(-90deg)" viewBox="0 0 440 440"><circle class="sk" cx="220" cy="220" r="218.500" pathLength="100"/></svg>
+      </div>
+
+    </div>
+    <div id="pName" class="abs">
+      <h1><span id="pDN"></span><span id="pVb"></span></h1>
+      <div id="pHandle"></div>
+      <div id="pStat"></div>
+      <p id="pAbout"></p>
+    </div>
+    <div id="pStats" class="abs"></div>
+    <div id="pBtns" class="abs"></div>
+
+    <div id="pScroll" class="abs">
+      <div class="psec"><div class="sec"><span id="pFT">FRIENDS</span><s></s></div><div id="pFriends"></div></div>
+      <div class="psec"><div class="sec"><span id="pCT">CREATIONS</span><s></s></div><div id="pCreations"></div></div>
+      <div class="psec"><div class="sec"><span id="pGT">GROUPS</span><s></s></div><div id="pGroups"></div></div>
+      <div class="psec"><div class="sec"><span id="pIT">COLLECTIBLES</span><s></s></div><div id="pItems"></div></div>
+      <div class="psec"><div class="sec"><span id="pBT">BADGES</span><s></s></div><div id="pBadges"></div></div>
+    </div>
+  </div>
+
+  
+    <div id="dpage" class="view off">
+      <div id="sec-discover" class="sec abs">DISCOVER<s></s></div>
+      <div id="chips" class="abs">
+        <div id="chipsIn">
+          <div id="pill"></div>
+        </div>
+      </div>
+      <div id="sbox" class="abs">
+        <div data-i="lucide:search"></div><input id="q" type="text" placeholder="Search experiences" spellcheck="false"
+          autocomplete="off"><svg class="ol" viewBox="0 0 378 66">
+          <rect class="sk" x="1.500" y="1.500" width="375" height="63" rx="31.500" pathLength="100" />
+        </svg>
+      </div>
+      <div id="gridWrap" class="abs">
+        <div id="grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ============ Roblox data layer ============
+       users.roblox.com/v1/users/authenticated            (cookie)  me
+       economy.roblox.com/v1/users/{id}/currency          (cookie)  robux
+       friends.roblox.com/v1/users/{id}/friends           friends
+       thumbnails.roblox.com/v1/users/avatar-headshot     headshots
+       apis.roblox.com/discovery-api/omni-recommendation  (cookie, POST) "Continue" sort = recently played
+       games.roblox.com/v1/games?universeIds=             name/creator/rootPlaceId
+       thumbnails.roblox.com/v1/games/multiget/thumbnails game thumbs
+       In Tauri: enable tauri-plugin-http + withGlobalTauri (requests go through Rust, no CORS). */
+    /* Robux icon: tries ./robux.svg (save your file next to this html for offline use), then your link, then a drawn fallback */
+    (function () {
+      const u = ["robux.png", "robux.svg", "https://static.wikia.nocookie.net/robloxs/images/5/50/Robux_2019_white.svg/revision/latest/scale-to-width-down/121?cb=20240730003432"]; let k = 0;
+      const img = new Image(); img.width = img.height = 40; img.style.cssText = "width:40px;height:40px;display:block"; img.draggable = false;
+      img.onerror = () => { if (++k < u.length) img.src = u[k]; else img.replaceWith(Object.assign(document.createElement("span"), { innerHTML: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="3.600" stroke-linejoin="round"><path d="M20 3l14.500 8.400v17.200L20 37 5.500 28.600V11.400z"/><rect x="14.500" y="14.500" width="11" height="11" rx="1.500"/></svg>' })) };
+      img.src = u[0]; document.getElementById("rbi").append(img);
+    })();
+    /* Roblox logo: one full ease-in-out spin per hover. It always finishes; re-hovering after it ends spins again. */
+    (function () {
+      const el = document.getElementById("logo");
+      const img = new Image();
+      img.src = "logo.png";
+      img.alt = "Logo";
+      img.style.cssText = "width:100%;height:100%;object-fit:contain;display:block;";
+      img.onload = () => { el.innerHTML = ""; el.appendChild(img); delete el.dataset.i; };
+      el.addEventListener("mouseenter", () => { el.style.opacity = "0.8"; el.style.transform = "scale(1.05)"; });
+      el.addEventListener("mouseleave", () => { el.style.opacity = "1"; el.style.transform = "none"; });
+    })();
+    const cfg = { cookie: localStorage.getItem("rbxCookie") || "" };
+    window.setRobloxCookie = c => {
+      if (!c) { localStorage.removeItem("rbxCookie"); location.reload(); return; }
+      c = c.replace(/^\.?ROBLOSECURITY=/i, "").replace(/^"|"$/g, "").trim();
+      localStorage.setItem("rbxCookie", c);
+      location.reload();
+    };
+    document.getElementById("gear").onclick = () => {
+      const cur = localStorage.getItem("rbxCookie") || "";
+      const c = prompt("Paste your Roblox .ROBLOSECURITY cookie to load your profile & games (or leave empty to log out):", cur);
+      if (c !== null) window.setRobloxCookie(c.trim());
+    };
+    document.getElementById("me").onclick = document.getElementById("meName").onclick = () => {
+      if (!cfg.cookie) document.getElementById("gear").click();
+    };
+    let csrf = "";
+    async function rbx(url, o = {}) {
+      const f = window.__TAURI__?.http?.fetch || fetch, h = { ...(o.headers || {}) };
+      if (cfg.cookie) h.Cookie = ".ROBLOSECURITY=" + cfg.cookie;
+      if (o.body) h["Content-Type"] = "application/json";
+      for (let i = 0; i < 2; i++) {
+        if (csrf) h["x-csrf-token"] = csrf;
+        const r = await f(url, { ...o, headers: h });
+        if (r.status === 403) {
+          const token = r.headers.get("x-csrf-token") || r.headers.get("X-Csrf-Token");
+          try { await r.text(); } catch (_) { }
+          if (token) { csrf = token; continue; }
+        }
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      }
+      throw new Error("csrf");
+    }
+    const J = u => rbx(u);
+
+    async function fetchPresences(userIds) {
+      if (!userIds || !userIds.length) return {};
+      const chunks = [];
+      for (let i = 0; i < userIds.length; i += 40) {
+        chunks.push(userIds.slice(i, i + 40));
+      }
+      const results = await Promise.all(chunks.map(chunk =>
+        rbx("https://presence.roblox.com/v1/presence/users", {
+          method: "POST",
+          body: JSON.stringify({ userIds: chunk })
+        }).catch(e => {
+          console.warn("Presence batch error:", e);
+          return { userPresences: [] };
+        })
+      ));
+      const pMap = {};
+      for (const res of results) {
+        for (const p of (res.userPresences || [])) {
+          pMap[p.userId] = p;
+        }
+      }
+      return pMap;
+    }
+
+    function getPresenceScore(type) {
+      if (type === 2) return 4; // InGame
+      if (type === 3) return 3; // InStudio
+      if (type === 1) return 2; // Online
+      return 1;             // Offline (0)
+    }
+
+    function sortFriendsList(list) {
+      return [...list].sort((a, b) => {
+        const sA = getPresenceScore(a.presenceType);
+        const sB = getPresenceScore(b.presenceType);
+        if (sB !== sA) return sB - sA;
+        return (a.name || "").localeCompare(b.name || "");
+      });
+    }
+
+    async function ensureFriendVisuals(f) {
+      if (f.img && f.name) return;
+      try {
+        const [uData, th] = await Promise.all([
+          !f.name ? rbx("https://users.roblox.com/v1/users", { method: "POST", body: JSON.stringify({ userIds: [f.id], excludeBannedUsers: false }) }).catch(() => ({ data: [] })) : { data: [] },
+          !f.img ? J(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${f.id}&size=150x150&format=Png`).catch(() => ({ data: [] })) : { data: [] }
+        ]);
+        if (uData.data?.[0]) {
+          const u = uData.data[0];
+          f.name = u.displayName || u.name || f.name;
+          f.handle = u.name || f.handle;
+          f.ver = !!u.hasVerifiedBadge;
+        }
+        if (th.data?.[0]?.imageUrl) {
+          f.img = th.data[0].imageUrl;
+        }
+      } catch (_) { }
+    }
+
+    
+    function parseAgeRating(rec) {
+      if (!rec) return "All Ages";
+      const s = rec.ageRecommendationSummary?.ageRecommendation;
+      if (!s) return "All Ages";
+      if (s.minimumAge === 17 || s.contentMaturity === "restricted" || /17\+/i.test(s.displayName)) return "17+";
+      if (s.minimumAge === 13 || s.contentMaturity === "moderate" || /13\+/i.test(s.displayName)) return "13+";
+      if (s.minimumAge === 9 || s.contentMaturity === "mild" || /9\+/i.test(s.displayName)) return "9+";
+      if (s.minimumAge === 0 || s.contentMaturity === "minimal" || /all ages/i.test(s.displayName)) return "All Ages";
+      if (s.displayName && s.displayName !== "Unknown") return s.displayName;
+      return "All Ages";
+    }
+
+    async function ensureGameAgeRating(g, universeId) {
+      if (g.age && g.age !== "All Ages") return;
+      try {
+        const res = await rbx("https://apis.roblox.com/experience-guidelines-service/v1beta1/multi-age-recommendation", {
+          method: "POST",
+          body: JSON.stringify({ universeIds: [universeId] })
+        });
+        const item = res?.ageRecommendationDetailsByUniverse?.[0]?.ageRecommendationDetails;
+        if (item) {
+          g.age = parseAgeRating(item);
+          if (S?.games?.[sel] === g) {
+            const ageEl = $("#age");
+            if (ageEl) ageEl.textContent = g.age;
+          }
+        }
+      } catch (_) { }
+    }
+
+    async function loadReal() {
+      const me = await J("https://users.roblox.com/v1/users/authenticated");
+      const [cur, fr] = await Promise.all([
+        J(`https://economy.roblox.com/v1/users/${me.id}/currency`).catch(() => ({ robux: 0 })),
+        J(`https://friends.roblox.com/v1/users/${me.id}/friends`)
+      ]);
+      const rawFriends = fr.data || [];
+      const allFriendIds = rawFriends.map(x => x.id).filter(Boolean);
+
+      // Batch fetch presences for ALL friends (up to 40 per batch)
+      const pMap = await fetchPresences(allFriendIds);
+
+      let friends = rawFriends.map(rf => {
+        const p = pMap[rf.id] || {};
+        const pType = p.userPresenceType || 0;
+        return {
+          id: rf.id,
+          name: rf.displayName || rf.name || "Friend",
+          handle: rf.name || "",
+          ver: !!rf.hasVerifiedBadge,
+          presenceType: pType,
+          online: pType > 0,
+          inGame: pType === 2,
+          inStudio: pType === 3,
+          lastLocation: p.lastLocation || "",
+          placeId: p.placeId || p.rootPlaceId || null,
+          gameId: p.gameId || null,
+          img: ""
+        };
+      });
+
+      // Sort friends so InGame (far left) > InStudio > Online > Offline (far right)
+      friends = sortFriendsList(friends);
+
+      // Batch fetch profiles & thumbnails for me + top 25 friends (to have next-in-line friends ready)
+      const priorityIds = [me.id, ...friends.slice(0, 25).map(f => f.id)];
+      const [uData, th] = await Promise.all([
+        priorityIds.length ? rbx("https://users.roblox.com/v1/users", { method: "POST", body: JSON.stringify({ userIds: priorityIds, excludeBannedUsers: false }) }).catch(() => ({ data: [] })) : { data: [] },
+        J(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${priorityIds.join(",")}&size=150x150&format=Png`).catch(() => ({ data: [] }))
+      ]);
+
+      const uMap = Object.fromEntries((uData.data || []).map(x => [x.id, x]));
+      const imgMap = Object.fromEntries((th.data || []).map(x => [x.targetId, x.imageUrl]));
+
+      friends.forEach(f => {
+        if (uMap[f.id]) {
+          const u = uMap[f.id];
+          f.name = u.displayName || u.name || f.name;
+          f.handle = u.name || f.handle;
+          f.ver = !!u.hasVerifiedBadge;
+        }
+        if (imgMap[f.id]) {
+          f.img = imgMap[f.id];
+        }
+      });
+
+      const rec = await rbx("https://apis.roblox.com/discovery-api/omni-recommendation", { method: "POST", body: JSON.stringify({ pageType: "Home", sessionId: crypto.randomUUID() }) });
+      const sort = rec.sorts.find(s => /continue/i.test(s.topic || s.topicId || "")) || rec.sorts[0];
+      const uids = sort.recommendationList.filter(x => x.contentType === "Game").slice(0, 12).map(x => x.contentId);
+      const [gd, gt, ga] = await Promise.all([
+        J(`https://games.roblox.com/v1/games?universeIds=${uids.join(",")}`),
+        J(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${uids.join(",")}&countPerUniverse=1&size=768x432&format=Png`),
+        rbx("https://apis.roblox.com/experience-guidelines-service/v1beta1/multi-age-recommendation", {
+          method: "POST",
+          body: JSON.stringify({ universeIds: uids })
+        }).catch(() => ({}))
+      ]);
+      const img = Object.fromEntries(gt.data.map(x => [x.universeId, x.thumbnails?.[0]?.imageUrl]));
+      const ageMap = {};
+      (ga.ageRecommendationDetailsByUniverse || []).forEach(x => {
+        if (x.universeId && x.ageRecommendationDetails) {
+          ageMap[x.universeId] = parseAgeRating(x.ageRecommendationDetails);
+        }
+      });
+      const games = uids.map(id => gd.data.find(g => g.id === id)).filter(Boolean).map(g => ({
+        id: g.id,
+        name: g.name,
+        by: g.creator.name,
+        place: g.rootPlaceId,
+        img: img[g.id],
+        age: ageMap[g.id] || "All Ages"
+      }));
+
+      return { me: { id: me.id, name: me.displayName || me.name, img: imgMap[me.id], robux: cur.robux }, friends, total: rawFriends.length, games };
+    }
+    function demo() {
+      const F = [
+        { id: 1, name: "Roblox", handle: "Roblox", ver: true, presenceType: 2, online: true, inGame: true, inStudio: false, lastLocation: "Natural Disaster Survival", placeId: 189707, gameId: "demo-server-1" },
+        { id: 2, name: "Builderman", handle: "Builderman", ver: true, presenceType: 3, online: true, inGame: false, inStudio: true, lastLocation: "Roblox Studio", placeId: null, gameId: null },
+        { id: 3, name: "Pixley", handle: "Pixleygon", ver: false, presenceType: 2, online: true, inGame: true, inStudio: false, lastLocation: "Brookhaven RP", placeId: 4924922222, gameId: "demo-server-2" },
+        { id: 4, name: "milk74l8O", handle: "milk74l8O", ver: true, presenceType: 1, online: true, inGame: false, inStudio: false, lastLocation: "Website", placeId: null, gameId: null },
+        { id: 5, name: "Julian", handle: "Julpavv", ver: false, presenceType: 3, online: true, inGame: false, inStudio: true, lastLocation: "Roblox Studio", placeId: null, gameId: null },
+        { id: 6, name: "shlexr", handle: "shlexr", ver: false, presenceType: 1, online: true, inGame: false, inStudio: false, lastLocation: "Roblox App", placeId: null, gameId: null },
+        { id: 7, name: "1ik", handle: "1ik", ver: true, presenceType: 0, online: false, inGame: false, inStudio: false, lastLocation: "", placeId: null, gameId: null },
+        { id: 8, name: "Captide", handle: "Captide", ver: false, presenceType: 0, online: false, inGame: false, inStudio: false, lastLocation: "", placeId: null, gameId: null },
+        { id: 9, name: "Jack", handle: "DiscombobulatedJack", ver: false, presenceType: 0, online: false, inGame: false, inStudio: false, lastLocation: "", placeId: null, gameId: null },
+        { id: 10, name: "7kayoh", handle: "7kayoh", ver: false, presenceType: 0, online: false, inGame: false, inStudio: false, lastLocation: "", placeId: null, gameId: null }
+      ];
+      const G = [["🌴 Outlaster", "Peak Precision Studios", "#7a2c14,#1c2a44", "All Ages"], ["Greenville", "Greenville Studios", "#8e9aa6,#3b4a3a", "All Ages"], ["Adopt Me!", "Uplift Games", "#f3c76b,#7fbf6a", "All Ages"], ["Drive Cart", "Studio Q", "#3a5be0,#e0733a", "9+"], ["Obby World", "Obby Co", "#4aa04a,#2b4a9a", "All Ages"]];
+      const sorted = sortFriendsList(F);
+      return { me: { name: "you", robux: 1.2e9 }, friends: sorted, total: 26, games: G.map(g => ({ name: g[0], by: g[1], place: 0, grad: g[2], age: g[3] })) };
+    }
+    /* Launch toast: Roblox logo (eased spin-then-pause loop) + "LAUNCHING..." slides in from the
+       right and back out, held for 6s. Shown for every launch, demo tiles included. */
+    function launchToast(title) {
+      const t = $("#toast"); t.classList.remove("on"); void t.offsetWidth;
+      const tm = $("#toastMsg");
+      if (tm) tm.textContent = title ? `JOINING ${title.toUpperCase()}...` : "LAUNCHING...";
+      t.classList.add("on");
+    }
+    /* Launch = hand the experience to the installed Roblox Player through its official deep link.
+       If gameInstanceId and/or friendUserId is provided, joins that exact server instance / follows friend. */
+    function launch(place, name, gameInstanceId, friendUserId) {
+      launchToast(friendUserId ? name : "");
+      if (!place) return;
+      let u = `roblox://experiences/start?placeId=${encodeURIComponent(place)}`;
+      if (gameInstanceId) {
+        u += `&gameInstanceId=${encodeURIComponent(gameInstanceId)}`;
+      }
+      if (friendUserId) {
+        u += `&userId=${encodeURIComponent(friendUserId)}`;
+      }
+      const o = window.__TAURI__?.opener?.openUrl || window.__TAURI__?.shell?.open;
+      o ? o(u) : (location.href = u);
+    }
+
+    /* ============ Iconify icons ============
+       Every [data-i="set:name"] is filled from https://api.iconify.design/{set}.json?icons=...
+       and cached in localStorage so the app works offline after the first run.
+       For production: npm i @iconify-json/lucide @iconify-json/simple-icons and inline them at build time. */
+    const L = '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">';
+    const FB = {
+      "lucide:key-round": L + '<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></g>',
+      "lucide:eye": L + '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></g>',
+      "lucide:eye-off": L + '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></g>',
+      "lucide:lock": L + '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></g>',
+      "lucide:shield-alert": L + '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.500-1.200 6.240-2.720a1.170 1.170 0 0 1 1.520 0C14.510 3.810 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></g>', /* tiny offline fallbacks if the API is unreachable on first launch */
+      "lucide:chevron-up": L + '<path d="m18 15-6-6-6 6"/></g>',
+      "lucide:thumbs-up": L + '<path d="M7 10v12"/><path d="M15 5.880 14 10h5.830a2 2 0 0 1 1.920 2.560l-2.330 8A2 2 0 0 1 17.500 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.760a2 2 0 0 0 1.790-1.110L12 2a3.130 3.130 0 0 1 3 3.880Z"/></g>',
+      "lucide:users": L + '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.870"/><path d="M16 3.130a4 4 0 0 1 0 7.750"/></g>',
+      "lucide:search": L + '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.300-4.300"/></g>',
+      "lucide:check": L + '<path d="M20 6 9 17l-5-5"/></g>',
+      "lucide:chevron-left": L + '<path d="m15 18-6-6 6-6"/></g>',
+      "lucide:external-link": L + '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></g>',
+      "lucide:settings": L + '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8.500" stroke-dasharray="3 3.400"/></g>',
+      "simple-icons:roblox": '<rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor" transform="rotate(-14 12 12)"/><rect x="9.500" y="9.500" width="5" height="5" rx="1" fill="#1b1c31" transform="rotate(-14 12 12)"/>'
+    };
+    async function icons() {
+      const els = [...document.querySelectorAll("[data-i]:not([data-done])")], sets = {};
+      els.forEach(n => { const [p, i] = n.dataset.i.split(":"); (sets[p] ??= new Set).add(i) });
+      let cache = {}; try { cache = JSON.parse(localStorage.getItem("iconCache") || "{}") } catch { }
+      const f = window.__TAURI__?.http?.fetch || fetch;
+      await Promise.all(Object.entries(sets).map(async ([p, s]) => {
+        const miss = [...s].filter(i => !cache[p + ":" + i]); if (!miss.length) return;
+        try {
+          const r = await (await f(`https://api.iconify.design/${p}.json?icons=${miss.join(",")}`)).json();
+          for (const [k, v] of Object.entries(r.icons || {})) cache[p + ":" + k] = { b: v.body, w: v.width || r.width || 24, h: v.height || r.height || 24 }
+        } catch { }
+      }));
+      try { localStorage.setItem("iconCache", JSON.stringify(cache)) } catch { }
+      els.forEach(n => {
+        const c = cache[n.dataset.i], b = c?.b || FB[n.dataset.i]; if (!b) return;
+        n.innerHTML = `<svg viewBox="0 0 ${c?.w || 24} ${c?.h || 24}">${b}</svg>`;
+        n.querySelectorAll("path").forEach(p => p.setAttribute("pathLength", "100")); n.dataset.done = 1
+      });
+    }
+
+    /* ============ UI ============ */
+    const $ = s => document.querySelector(s);
+    const fmt = n => n >= 1e9 ? Math.floor(n / 1e9) + "B+" : n >= 1e6 ? Math.floor(n / 1e6) + "M+" : n >= 1e3 ? Math.floor(n / 1e3) + "K+" : String(n);
+    const hue = s => [...s].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+    let S, sel = 0, bgI = 0, page = "home", discSelGame = null;
+    function fit() {
+      const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+      const t = `translate(${(innerWidth - 1920 * s) / 2}px,${(innerHeight - 1080 * s) / 2}px) scale(${s})`;
+      $("#stage").style.transform = t;
+      const ls = $("#loginStage"); if (ls) ls.style.transform = t;
+    }
+    addEventListener("resize", fit); fit();
+    const RING = '<svg class="ol" viewBox="0 0 150 150"><circle class="sk" cx="75" cy="75" r="73.500" pathLength="100"/></svg>';
+
+    function getFriendStatusInfo(f) {
+      const isOnline = f.presenceType > 0;
+      const isInGame = f.presenceType === 2;
+      const isInStudio = f.presenceType === 3;
+      let statusText = "Offline", subText = "@" + (f.handle || f.name), subClass = "";
+      if (isInGame) {
+        const gName = f.lastLocation || "Experience";
+        statusText = `Playing ${gName} • Click to join server`;
+        subText = gName;
+        subClass = "in-game";
+      } else if (isInStudio) {
+        const sName = f.lastLocation || "Roblox Studio";
+        statusText = `In ${sName}`;
+        subText = sName;
+        subClass = "in-studio";
+      } else if (isOnline) {
+        statusText = "Online";
+        subText = f.handle ? "@" + f.handle : "Online";
+        subClass = "online";
+      }
+      return { statusText, subText, subClass, isInGame, isInStudio, isOnline };
+    }
+
+    function createFriendElement(f, i = 0) {
+      const d = document.createElement("div");
+      d.className = "f";
+      d.dataset.uid = f.id || "";
+      const st = getFriendStatusInfo(f);
+      d.dataset.online = st.isOnline ? "true" : "false";
+      if (st.isInGame) d.dataset.ingame = "true";
+      if (st.isInStudio) d.dataset.instudio = "true";
+      d.title = `${f.name} (@${f.handle}) • ${st.statusText}`;
+
+      let gameHtml = "";
+      if (st.isInGame) {
+        gameHtml = `<small class="f-game in-game" title="${f.lastLocation || 'Experience'}">🎮 ${f.lastLocation || 'Experience'}</small>`;
+      } else if (st.isInStudio) {
+        gameHtml = `<small class="f-game in-studio" title="${f.lastLocation || 'Roblox Studio'}">⚒ ${f.lastLocation || 'Roblox Studio'}</small>`;
+      }
+
+      const bg = f.img ? "" : `background:hsl(${hue(f.name)} 35% 28%)`;
+      d.innerHTML = `<div class="av" style="${bg}">${f.img ? `<img src="${f.img}" alt="${f.name}">` : ""}<div class="status-ring"></div><div class="join-pill"><svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M19.266 13.516a1.917 1.917 0 0 0 0-3.032A35.8 35.8 0 0 0 9.35 5.068l-.653-.232c-1.248-.443-2.567.401-2.736 1.69a42.5 42.5 0 0 0 0 10.948c.17 1.289 1.488 2.133 2.736 1.69l.653-.232a35.8 35.8 0 0 0 9.916-5.416"/></svg><span>JOIN</span></div>${RING}${f.ver ? '<div class="vb"><div data-i="lucide:check"></div></div>' : ""}</div><b>${f.name}</b><small class="f-handle">${f.handle ? "@" + f.handle : ""}</small>${gameHtml}`;
+
+      d.onclick = e => friendClick(e, f);
+      return d;
+    }
+
+    function updateFriendElement(el, f) {
+      el.dataset.uid = f.id || "";
+      const st = getFriendStatusInfo(f);
+      el.dataset.online = st.isOnline ? "true" : "false";
+      if (st.isInGame) {
+        el.dataset.ingame = "true";
+        delete el.dataset.instudio;
+      } else if (st.isInStudio) {
+        el.dataset.instudio = "true";
+        delete el.dataset.ingame;
+      } else {
+        delete el.dataset.ingame;
+        delete el.dataset.instudio;
+      }
+      el.title = `${f.name} (@${f.handle}) • ${st.statusText}`;
+
+      if (f.img) {
+        const av = el.querySelector(".av");
+        let img = av?.querySelector("img");
+        if (!img && av) {
+          img = document.createElement("img");
+          img.src = f.img;
+          img.alt = f.name;
+          av.insertBefore(img, av.firstChild);
+        } else if (img && img.src !== f.img) {
+          img.src = f.img;
+        }
+      }
+
+      const b = el.querySelector("b");
+      if (b && b.textContent !== f.name) b.textContent = f.name;
+
+      const handleEl = el.querySelector(".f-handle");
+      if (handleEl && handleEl.textContent !== "@" + f.handle) handleEl.textContent = "@" + f.handle;
+
+      let gameEl = el.querySelector(".f-game");
+      if (st.isInGame) {
+        const gName = f.lastLocation || "Experience";
+        if (!gameEl) {
+          gameEl = document.createElement("small");
+          el.appendChild(gameEl);
+        }
+        gameEl.className = "f-game in-game";
+        gameEl.textContent = "🎮 " + gName;
+        gameEl.title = gName;
+      } else if (st.isInStudio) {
+        const sName = f.lastLocation || "Roblox Studio";
+        if (!gameEl) {
+          gameEl = document.createElement("small");
+          el.appendChild(gameEl);
+        }
+        gameEl.className = "f-game in-studio";
+        gameEl.textContent = "⚒ " + sName;
+        gameEl.title = sName;
+      } else if (gameEl) {
+        gameEl.remove();
+      }
+
+      el.onclick = e => friendClick(e, f);
+    }
+
+    function createMoreElement(leftCount) {
+      const d = document.createElement("div");
+      d.className = "f more";
+      d.innerHTML = `<div class="av"><div><strong>+${leftCount}</strong><em>MORE</em></div>${RING}</div>`;
+      d.onclick = () => {
+        const meId = S?.me?.id;
+        const u = meId ? `https://www.roblox.com/users/${meId}/friends` : "https://www.roblox.com/friends";
+        const o = window.__TAURI__?.opener?.openUrl || window.__TAURI__?.shell?.open;
+        o ? o(u) : window.open(u, "_blank");
+      };
+      return d;
+    }
+
+    function renderFriendsWithAnimation(newFriendsList, isInitial = false) {
+      const box = $("#friends");
+      if (!box) return;
+
+      const displayFriends = newFriendsList.slice(0, 10);
+      const leftCount = (S?.total || newFriendsList.length) - displayFriends.length;
+
+      if (isInitial) {
+        box.innerHTML = "";
+        displayFriends.forEach((f, i) => {
+          const el = createFriendElement(f, i);
+          el.classList.add("pop");
+          el.style.setProperty("--i", i + 2);
+          box.appendChild(el);
+        });
+        if (leftCount > 0) {
+          const more = createMoreElement(leftCount);
+          more.classList.add("pop");
+          more.style.setProperty("--i", 12);
+          box.appendChild(more);
+        }
+        return;
+      }
+
+      // 1. Record First positions (left coordinate on screen)
+      const oldRects = new Map();
+      for (const child of box.children) {
+        if (child.dataset.uid) {
+          oldRects.set(child.dataset.uid, child.getBoundingClientRect().left);
+        }
+      }
+
+      // 2. Map existing elements
+      const existingEls = new Map();
+      for (const child of Array.from(box.children)) {
+        if (child.dataset.uid) {
+          existingEls.set(child.dataset.uid, child);
+        }
+      }
+
+      // 3. Update or create elements in new sorted order
+      const newEls = [];
+      displayFriends.forEach((f, i) => {
+        let el = existingEls.get(String(f.id));
+        if (el) {
+          updateFriendElement(el, f);
+          existingEls.delete(String(f.id));
+        } else {
+          el = createFriendElement(f, i);
+          el.dataset.isNew = "true";
+        }
+        newEls.push(el);
+      });
+
+      // Remove existing elements no longer in top 10
+      for (const [_, el] of existingEls) {
+        el.remove();
+      }
+
+      // Re-append elements in new order into flex container
+      newEls.forEach(el => box.appendChild(el));
+
+      // Update or append the 'more' element
+      let moreEl = box.querySelector(".f.more");
+      if (leftCount > 0) {
+        if (!moreEl) {
+          moreEl = createMoreElement(leftCount);
+        } else {
+          const strong = moreEl.querySelector("strong");
+          if (strong) strong.textContent = `+${leftCount}`;
+        }
+        box.appendChild(moreEl);
+      } else if (moreEl) {
+        moreEl.remove();
+      }
+
+      // 4. Record Last positions and apply Invert transforms (FLIP)
+      const newRects = new Map();
+      for (const child of box.children) {
+        if (child.dataset.uid) {
+          newRects.set(child.dataset.uid, child.getBoundingClientRect().left);
+        }
+      }
+
+      for (const child of box.children) {
+        const uid = child.dataset.uid;
+        if (!uid) continue;
+        if (oldRects.has(uid) && newRects.has(uid)) {
+          const deltaX = oldRects.get(uid) - newRects.get(uid);
+          if (Math.abs(deltaX) > 1) {
+            child.style.transition = "none";
+            child.style.transform = `translateX(${deltaX}px)`;
+            child.style.zIndex = "4";
+          } else {
+            child.style.transform = "";
+            child.style.transition = "";
+          }
+        } else if (child.dataset.isNew) {
+          delete child.dataset.isNew;
+          child.style.transition = "none";
+          child.style.opacity = "0";
+          child.style.transform = "translateY(12px) scale(0.92)";
+        }
+      }
+
+      // Force reflow
+      void box.offsetWidth;
+
+      // 5. Play transitions smoothly with cubic-bezier(.16, 1, .3, 1)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          for (const child of box.children) {
+            const uid = child.dataset.uid;
+            if (!uid) continue;
+            child.style.transition = "transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease";
+            child.style.transform = "";
+            child.style.opacity = "1";
+          }
+          setTimeout(() => {
+            for (const child of box.children) {
+              if (!child.matches(":hover")) {
+                child.style.transition = "";
+                child.style.zIndex = "";
+              }
+            }
+          }, 700);
+        });
+      });
+    }
+
+    function drawFriends() {
+      renderFriendsWithAnimation(S.friends, true);
+    }
+    function drawTiles() {
+      const tr = $("#track"); tr.innerHTML = "";
+      S.games.forEach((g, i) => {
+        const t = document.createElement("div"); t.className = "t"; t.style.setProperty("--i", i); t.style.left = (74 + i * 435) + "px";
+        const bg = !g.img && g.grad ? ` style="background:linear-gradient(135deg,${g.grad})"` : "";
+        t.innerHTML = `<div class="c"${bg}>${g.img ? `<img src="${g.img}" alt="${g.name}">` : ""}</div><svg class="ol" viewBox="0 0 412 250"><rect class="sk" x="1.500" y="1.500" width="409" height="247" rx="28.500" pathLength="100"/></svg>`;
+        t.onclick = () => i === sel ? launch(g.place, g.name) : select(i);
+        tr.append(t);
+      });
+    }
+    function setBackground(img, grad) {
+      const layers = document.querySelectorAll("#bg i");
+      if (!layers.length) return;
+      const L2 = layers[bgI ^= 1];
+      L2.style.backgroundImage = img ? `url(${img})` : `linear-gradient(135deg,${grad || "#3a2418,#15162a"})`;
+      L2.classList.add("on"); layers[bgI ^ 1].classList.remove("on");
+    }
+    function select(i) {
+      i = Math.max(0, Math.min(S.games.length - 1, i));
+      const g = S.games[i]; sel = i;
+      document.querySelectorAll(".t").forEach((t, k) => t.classList.toggle("sel", k === i));
+      $("#track").style.transform = `translateX(${-i * 435}px)`;
+      const m = g.name.match(/^(\p{Extended_Pictographic}\uFE0F?)\s*(.*)$/u);
+      const ico = $("#ico");
+      if (m && m[1]) { ico.textContent = m[1]; ico.style.display = "inline"; ico.style.marginRight = "12px" }
+      else { ico.textContent = ""; ico.style.display = "none"; ico.style.marginRight = "0" }
+      $("#ttl").textContent = m ? m[2] : g.name;
+      $("#by").innerHTML = `By <span>${g.by}</span>`;
+      const ageEl = $("#age");
+      if (ageEl) {
+        ageEl.textContent = g.age || "All Ages";
+        ageEl.classList.remove("sw");
+        void ageEl.offsetWidth;
+        ageEl.style.animationDelay = "140ms";
+        ageEl.classList.add("sw");
+      }
+      [$("#hd h1"), $("#by")].forEach((e, k) => { e.classList.remove("sw"); void e.offsetWidth; e.style.animationDelay = k * 70 + "ms"; e.classList.add("sw") });
+      setBackground(g.img, g.grad);
+      if (!g.age && g.id) ensureGameAgeRating(g, g.id);
+    }
+    addEventListener("keydown", e => {
+      if (page !== "home") return;
+      if (e.key === "ArrowRight") select(sel + 1);
+      else if (e.key === "ArrowLeft") select(sel - 1);
+      else if (e.key === "Enter") launch(S.games[sel]?.place, S.games[sel]?.name);
+    });
+    $("#play").onclick = () => launch(S.games[sel]?.place, S.games[sel]?.name);
+
+    /* ============ Pages ============ */
+    function setPage(p) {
+      if (p === page) return; if (page === "profile") profileLeave(); page = p;
+      $("#home").classList.toggle("off", p !== "home"); $("#dpage").classList.toggle("off", p !== "discover"); $("#ppage").classList.toggle("off", p !== "profile");
+      document.body.classList.toggle("disc", p === "discover"); document.body.classList.toggle("prof", p === "profile");
+      document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("on", a.dataset.p === p));
+      if (p === "discover") openDiscover();
+      if (p === "home") {
+        if (discSelGame) {
+          let existingIdx = S?.games?.findIndex(g => g.place && discSelGame.place ? g.place === discSelGame.place : g.name === discSelGame.name);
+          if (existingIdx !== -1 && existingIdx !== undefined) {
+            select(existingIdx);
+          } else if (S && S.games) {
+            const newGame = {
+              name: discSelGame.name,
+              by: discSelGame.by || "Experience",
+              place: discSelGame.place || 0,
+              img: discSelGame.img,
+              grad: discSelGame.grad,
+              age: discSelGame.age || "All Ages"
+            };
+            S.games.unshift(newGame);
+            drawTiles();
+            select(0);
+          }
+          discSelGame = null;
+        } else if (S?.games?.[sel]) {
+          const g = S.games[sel];
+          setBackground(g.img, g.grad);
+        }
+      }
+    }
+    document.querySelectorAll("#nav a[data-p]").forEach(a => a.addEventListener("click", () => setPage(a.dataset.p)));
+    $("#logo").addEventListener("click", () => setPage("home"));
+    $("#disc").addEventListener("click", () => setPage("discover"));
+
+    /* ============ Discover ============
+       Chips: your Home sorts from apis.roblox.com/discovery-api/omni-recommendation when a cookie is set,
+       otherwise keyword searches through apis.roblox.com/search-api/omni-search (public, returns universe ids).
+       Cards: games.roblox.com/v1/games (name, playing, rootPlaceId) + /games/votes + thumbnails multiget.
+       The omni-search response shape is read defensively (searchResults[].contents[]); log it once if cards come back empty. */
+    const D = { chips: [], active: 0, req: 0, ready: false, dragged: false }, SID = crypto.randomUUID();
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const fmtN = n => n >= 1e9 ? (n / 1e9).toFixed(1).replace(/\.0$/, "") + "B" : n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M" : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, "") + "K" : String(n);
+    async function hydrate(ids) {
+      if (!ids.length) return [];
+      const q = ids.join(",");
+      const [d, v, t, ga] = await Promise.all([
+        J(`https://games.roblox.com/v1/games?universeIds=${q}`),
+        J(`https://games.roblox.com/v1/games/votes?universeIds=${q}`).catch(() => ({ data: [] })),
+        J(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${q}&countPerUniverse=1&size=768x432&format=Png`).catch(() => ({ data: [] })),
+        rbx("https://apis.roblox.com/experience-guidelines-service/v1beta1/multi-age-recommendation", {
+          method: "POST",
+          body: JSON.stringify({ universeIds: ids })
+        }).catch(() => ({}))
+      ]);
+      const vote = Object.fromEntries(v.data.map(x => [x.id, x])), img = Object.fromEntries(t.data.map(x => [x.universeId, x.thumbnails?.[0]?.imageUrl]));
+      const ageMap = {};
+      (ga.ageRecommendationDetailsByUniverse || []).forEach(x => {
+        if (x.universeId && x.ageRecommendationDetails) {
+          ageMap[x.universeId] = parseAgeRating(x.ageRecommendationDetails);
+        }
+      });
+      return ids.map(id => d.data.find(g => g.id === id)).filter(Boolean).map(g => {
+        const vt = vote[g.id] || {}, tot = (vt.upVotes || 0) + (vt.downVotes || 0);
+        return { id: g.id, name: g.name, by: g.creator?.name || "Experience", place: g.rootPlaceId, price: g.price || null, playing: g.playing || 0, like: tot ? Math.round(vt.upVotes / tot * 100) : null, img: img[g.id], age: ageMap[g.id] || "All Ages" }
+      });
+    }
+    async function chipGames(c) {
+      if (c.games) return c.games;
+      let ids = c.ids;
+      if (!ids && c.sid) {
+        const r = await rbx(`https://apis.roblox.com/explore-api/v1/get-sort-content?sessionId=${SID}&sortId=${encodeURIComponent(c.sid)}&device=computer&country=all`);
+        ids = (r.games || []).map(g => g.universeId || g.id);
+      } else if (!ids) {
+        const r = await rbx(`https://apis.roblox.com/search-api/omni-search?searchQuery=${encodeURIComponent(c.q)}&sessionId=${SID}&pageType=all`);
+        ids = []; for (const grp of r.searchResults || []) for (const x of grp.contents || []) if (!x.contentType || x.contentType === "Game") ids.push(x.contentId || x.universeId);
+      }
+      ids = [...new Set((ids || []).filter(Boolean))].slice(0, 50);
+      return c.games = await hydrate(ids);
+    }
+    /* Category pills = the sorts from roblox.com/charts. Names are matched against explore-api/v1/get-sorts to get the real sortId,
+       and fall back to a slug of the name if a sort isn't returned. */
+    const SORTS = ["Top Trending", "Up-and-Coming", "Top Playing Now", "Fun with Friends", "Top Revisited", "Top Earning", "Top Paid Access", "Top Rated", "Most Popular", "Trending Music Experiences", "Trending in RPG", "Trending in Sports & Racing", "Trending in Shooter", "Trending in Action", "Trending in Adventure", "Trending in Entertainment", "Trending in Obby & Platformer", "Trending in Party & Casual"];
+    const slug = n => n.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    async function discoverChips() {
+      let api = [];
+      try { const r = await rbx(`https://apis.roblox.com/explore-api/v1/get-sorts?sessionId=${SID}&device=computer&country=all`); api = r.sorts || [] } catch { }
+      const norm = n => String(n || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const map = Object.fromEntries(api.map(x => [norm(x.sortDisplayName || x.displayName || x.name), x.sortId || x.id]));
+      return SORTS.map(n => ({ name: n, sid: map[norm(n)] || slug(n) }));
+    }
+    function demoGames(seed) {
+      const N = ["Brookhaven", "Blox Fruits", "Tower of Hell", "Murder Mystery 2", "Pet Simulator", "Jailbreak", "Arsenal", "Doors", "Natural Disaster", "Bee Swarm", "Piggy", "Mad City", "Royale High", "Tycoon Kingdom", "Escape Run"], k = (seed * 4) % N.length;
+      return N.slice(k).concat(N.slice(0, k)).map((n, i) => ({ name: n, place: 0, playing: (i * 7919 + seed * 104729) % 90000 + 800, price: seed === 6 ? [799, 250, 1200, 99][i % 4] : null, like: 80 + (i * 3 + seed) % 18, grad: `hsl(${(hue(n) + seed * 25) % 360} 55% 38%),hsl(${(hue(n) + 90) % 360} 45% 20%)` }));
+    }
+    function drawChips() {
+      const box = $("#chipsIn"); box.querySelectorAll(".chip").forEach(c => c.remove());
+      D.chips.forEach((c, i) => { const e = document.createElement("div"); e.className = "chip"; e.textContent = c.name; e.onclick = () => { if (D.dragged) return; $("#q").value = ""; pickChip(i) }; box.append(e) }); fadeChips();
+    }
+    /* Hover push: neighboring chips slide away from whichever chip is hovered, falloff with distance.
+       The selected chip's white pill is a separate absolutely-positioned element synced to it, so
+       whatever push we give the active chip's text also gets applied to the pill, keeping them together. */
+    // Chip hover: clean native highlight (no scattering neighboring chips)
+    (function () {
+      // Static clean pill position
+    })();
+    let pillBase = 0, pillPush = 0;
+    function setPillPush(px) { pillPush = px; $("#pill").style.transform = `translateX(${pillBase + pillPush}px)` }
+    function movePill(first) {
+      const pill = $("#pill"), el = document.querySelectorAll(".chip");
+      el.forEach((c, i) => c.classList.toggle("on", i === D.active));
+      const c = el[D.active]; if (!c) { pill.style.opacity = 0; return }
+      if (first) { pill.style.transition = "none" }
+      c.parentNode && $('#chips').scrollTo({ left: Math.max(0, c.offsetLeft - ($('#chips').clientWidth - c.offsetWidth) / 2), behavior: first ? 'auto' : 'smooth' });
+      pillBase = c.offsetLeft; pillPush = 0;
+      pill.style.width = c.offsetWidth + "px"; pill.style.transform = `translateX(${pillBase}px)`; pill.style.opacity = 1;
+      if (first) { void pill.offsetWidth; pill.style.transition = "" }
+    }
+    let swapTimer = null;
+    function renderGrid(games, loading, q) {
+      const g = $("#grid");
+      const build = () => {
+        g.innerHTML = ""; $("#gridWrap").scrollTo({ top: 0, behavior: "instant" });
+        if (loading) {
+          for (let i = 0; i < 10; i++)g.insertAdjacentHTML("beforeend", `<div class="g ld" style="--i:${i}"><div class="th"><div class="c"></div></div><b class="nm"></b><div class="mt"></div></div>`);
+        } else if (!games.length) {
+          g.innerHTML = `<div id="empty">No experiences found${q ? ` for “${esc(q)}”` : ""}<small>Try another search or pick a different category.</small></div>`;
+        } else {
+          games.forEach((x, i) => {
+            const d = document.createElement("div"); d.className = "g"; d.style.setProperty("--i", Math.min(i, 14));
+            const bg = !x.img && x.grad ? ` style="background:linear-gradient(135deg,${x.grad})"` : "";
+            d.innerHTML = `<div class="th"><div class="c"${bg}>${x.img ? `<img src="${x.img}" alt="" loading="lazy" onload="this.classList.add('go')">` : ""}${x.price ? `<span class="pb"><svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"><path d="M20 3l14.500 8.400v17.200L20 37 5.500 28.600V11.400z"/><rect x="14.500" y="14.500" width="11" height="11" rx="1.500"/></svg>${x.price}</span>` : ""}</div><svg class="ol" viewBox="0 0 356 209"><rect class="sk" x="1.500" y="1.500" width="353" height="206" rx="28.500" pathLength="100"/></svg></div><b class="nm">${esc(x.name)}</b><div class="mt">${x.like != null ? `<span><i data-i="lucide:thumbs-up"></i>${x.like}%</span>` : ""}<span><i data-i="lucide:users"></i>${fmtN(x.playing)}${x.playing >= 1000 ? "+" : ""}</span></div>`;
+            if (discSelGame === x) d.classList.add("sel");
+            d.onclick = () => {
+              if (discSelGame === x) {
+                launch(x.place, x.name);
+              } else {
+                discSelGame = x;
+                g.querySelectorAll(".g").forEach(el => el.classList.remove("sel"));
+                d.classList.add("sel");
+                setBackground(x.img, x.grad);
+              }
+            };
+            d.onmouseenter = () => setBackground(x.img, x.grad);
+            g.append(d);
+            const img = d.querySelector("img"); if (img && img.complete) img.classList.add("go");
+          });
+          icons();
+        }
+        requestAnimationFrame(() => requestAnimationFrame(() => g.classList.remove("swap")));
+      };
+      clearTimeout(swapTimer);
+      if (g.children.length) {
+        g.classList.add("swap");
+        swapTimer = setTimeout(build, 230);
+      } else {
+        build();
+      }
+    }
+    function fadeChips() {
+      const c = $("#chips"), l = c.scrollLeft > 4, r = c.scrollLeft + c.clientWidth < c.scrollWidth - 4;
+      c.style.setProperty("--ml", l ? "56px" : "0px"); c.style.setProperty("--mr", r ? "56px" : "0px");
+    }
+    (function () {
+      const c = $("#chips"); let down = false, x0 = 0, s0 = 0;
+      c.addEventListener("scroll", fadeChips, { passive: true });
+      c.addEventListener("wheel", e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { c.scrollLeft += e.deltaY; e.preventDefault() } }, { passive: false });
+      c.addEventListener("pointerdown", e => { down = true; D.dragged = false; x0 = e.clientX; s0 = c.scrollLeft });
+      addEventListener("pointermove", e => { if (!down) return; const dx = e.clientX - x0; if (Math.abs(dx) > 6) { D.dragged = true; c.classList.add("drag") } if (D.dragged) c.scrollLeft = s0 - dx / (parseFloat($("#stage").style.transform.split("scale(")[1]) || 1) });
+      addEventListener("pointerup", () => { down = false; c.classList.remove("drag"); setTimeout(() => D.dragged = false, 0) });
+    })();
+    async function pickChip(i) {
+      D.active = i; movePill(); renderGrid([], true);
+      const my = ++D.req; let g;
+      try { g = await chipGames(D.chips[i]) } catch { g = demoGames(i) }
+      if (my === D.req) renderGrid(g);
+    }
+    async function runSearch(q) {
+      q = q.trim(); if (!q) return pickChip(Math.max(D.active, 0));
+      D.active = -1; movePill(); renderGrid([], true);
+      const my = ++D.req; let g;
+      try { g = await chipGames({ q }) } catch { g = demoGames(3).filter(x => x.name.toLowerCase().includes(q.toLowerCase())) }
+      if (my === D.req) renderGrid(g, false, q);
+    }
+    $("#q").addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter") runSearch(e.target.value); if (e.key === "Escape") e.target.blur() });
+    async function openDiscover() {
+      if (D.ready) return; D.ready = true;
+      D.chips = await discoverChips(); drawChips(); icons();
+      D.active = 0; movePill(true); await pickChip(0);
+    }
+
+/* ============ Profile ============
+   users.roblox.com/v1/users/{id}                               name, description, created, verified
+   friends.roblox.com/v1/users/{id}/(friends|followers|followings)[/count]
+   presence.roblox.com/v1/presence/users                        (POST, via fetchPresences)
+   thumbnails.roblox.com/v1/users/avatar                        2D full-body render (shown until the 3D model is ready / if it fails)
+   thumbnails.roblox.com/v1/users/avatar-3d                     -> JSON {obj, mtl, textures[], camera, aabb} on t0-t7.rbxcdn.com
+   games.roblox.com/v2/users/{id}/games                         creations (+ v1/games, votes, thumbnails for the cards)
+   groups.roblox.com/v2/users/{id}/groups/roles  + thumbnails/v1/groups/icons
+   inventory.roblox.com/v1/users/{id}/assets/collectibles + thumbnails/v1/assets   (403 = private inventory)
+   badges.roblox.com/v1/users/{id}/badges        + thumbnails/v1/badges/icons
+   If the profile can't be fetched (no cookie / no network) everything falls back to generated demo data.
+   Entry points: a friend tile (click the name, or the avatar of anyone who isn't joinable), or your own avatar top-right. */
+const P={req:0,prev:"home",hist:[],cur:null,selGame:null};
+const HEX='<svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"><path d="M20 3l14.500 8.400v17.200L20 37 5.500 28.600V11.400z"/><rect x="14.500" y="14.500" width="11" height="11" rx="1.500"/></svg>';
+const openExt=u=>{const o=window.__TAURI__?.opener?.openUrl||window.__TAURI__?.shell?.open;o?o(u):window.open(u,"_blank")};
+/* outline strokes: same recipe as the tiles (3px, butt caps, pathLength 100, 10px outside the object) */
+const olr=(w,h,r)=>`<svg class="ol" style="left:-10px;top:-10px;width:${w+20}px;height:${h+20}px" viewBox="0 0 ${w+20} ${h+20}"><rect class="sk" x="1.500" y="1.500" width="${w+17}" height="${h+17}" rx="${r+8.5}" pathLength="100"/></svg>`;
+const olc=d=>`<svg class="ol" style="left:-10px;top:-10px;width:${d+20}px;height:${d+20}px;transform:rotate(-90deg)" viewBox="0 0 ${d+20} ${d+20}"><circle class="sk" cx="${(d+20)/2}" cy="${(d+20)/2}" r="${(d+20)/2-1.5}" pathLength="100"/></svg>`;
+const gradOf=(s,k=0)=>`hsl(${(hue(s||"x")+k)%360} 55% 36%),hsl(${(hue(s||"x")+k+70)%360} 45% 18%)`;
+const stageScale=()=>($("#stage").getBoundingClientRect().width/1920)||1;
+
+function presInfo(p){
+  const t=p?.type||0;
+  if(t===2)return {t,cls:"in-game",text:"Playing "+(p.loc||"an experience")};
+  if(t===3)return {t,cls:"in-studio",text:"In Studio"+(p.loc?" · "+p.loc:"")};
+  if(t===1)return {t,cls:"online",text:"Online"};
+  return {t,cls:"",text:"Offline"};
+}
+
+
+/* ---- real data ---- */
+async function loadProfileHead(f){
+  const id=f.id;
+  const u=await J(`https://users.roblox.com/v1/users/${id}`);
+  const [fc,fo,fg,pm,th]=await Promise.all([
+    J(`https://friends.roblox.com/v1/users/${id}/friends/count`).catch(()=>null),
+    J(`https://friends.roblox.com/v1/users/${id}/followers/count`).catch(()=>null),
+    J(`https://friends.roblox.com/v1/users/${id}/followings/count`).catch(()=>null),
+    fetchPresences([id]),
+    J(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${id}&size=420x420&format=Png&isCircular=false`).catch(()=>({data:[]}))
+  ]);
+  const p=pm[id]||{};
+  return {
+    id,name:u.displayName||u.name,handle:u.name,ver:!!u.hasVerifiedBadge,
+    about:(u.description||"").trim(),
+    joined:u.created?new Date(u.created).toLocaleDateString(undefined,{month:"short",year:"numeric"}):"",
+    friends:fc?.count??null,followers:fo?.count??null,following:fg?.count??null,
+    pres:{type:p.userPresenceType??f.presenceType??0,loc:p.lastLocation??f.lastLocation??"",placeId:p.placeId||p.rootPlaceId||f.placeId||null,gameId:p.gameId||f.gameId||null},
+    body:th.data?.[0]?.imageUrl||null,img:f.img,self:id===S?.me?.id
+  };
+}
+async function getFriends(id) {
+  const r = await J(`https://friends.roblox.com/v1/users/${id}/friends`);
+  const raw = r.data || [];
+  const friendIds = raw.map(x => x.id).filter(Boolean);
+  const pm = await fetchPresences(friendIds);
+  let list = raw.map(x => {
+    const p = pm[x.id] || {}, t = p.userPresenceType || 0;
+    return {
+      id: x.id,
+      name: "",
+      handle: "",
+      ver: !!x.hasVerifiedBadge,
+      presenceType: t,
+      online: t > 0,
+      inGame: t === 2,
+      inStudio: t === 3,
+      lastLocation: p.lastLocation || "",
+      placeId: p.placeId || p.rootPlaceId || null,
+      gameId: p.gameId || null,
+      img: ""
+    };
+  });
+  list = sortFriendsList(list).slice(0, 6);
+  const topIds = list.map(x => x.id).filter(Boolean);
+  if (topIds.length) {
+    const [uData, th] = await Promise.all([
+      rbx("https://users.roblox.com/v1/users", {
+        method: "POST",
+        body: JSON.stringify({ userIds: topIds, excludeBannedUsers: false })
+      }).catch(() => ({ data: [] })),
+      J(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${topIds.join(",")}&size=150x150&format=Png`).catch(() => ({ data: [] }))
+    ]);
+    const uMap = Object.fromEntries((uData.data || []).map(x => [x.id, x]));
+    const im = Object.fromEntries((th.data || []).map(x => [x.targetId, x.imageUrl]));
+    list.forEach(x => {
+      if (uMap[x.id]) {
+        const u = uMap[x.id];
+        x.name = u.displayName || u.name || "Friend";
+        x.handle = u.name || "";
+        x.ver = !!u.hasVerifiedBadge;
+      }
+      x.img = im[x.id] || "";
+    });
+  }
+  return { total: raw.length, list };
+}
+async function getCreations(id){
+  const r=await J(`https://games.roblox.com/v2/users/${id}/games?accessFilter=Public&limit=50&sortOrder=Desc`);
+  const all=r.data||[],top=all.slice(0,8),ids=top.map(x=>x.id);
+  const visits=all.reduce((s,x)=>s+(x.placeVisits||0),0);
+  let list=[];
+  if(ids.length){
+    const q=ids.join(",");
+    const [d,v,t]=await Promise.all([
+      J(`https://games.roblox.com/v1/games?universeIds=${q}`).catch(()=>({data:[]})),
+      J(`https://games.roblox.com/v1/games/votes?universeIds=${q}`).catch(()=>({data:[]})),
+      J(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${q}&countPerUniverse=1&size=768x432&format=Png`).catch(()=>({data:[]}))
+    ]);
+    const vote=Object.fromEntries((v.data||[]).map(x=>[x.id,x])),img=Object.fromEntries((t.data||[]).map(x=>[x.universeId,x.thumbnails?.[0]?.imageUrl]));
+    list=top.map(x=>{const g=(d.data||[]).find(z=>z.id===x.id)||{},vt=vote[x.id]||{},tot=(vt.upVotes||0)+(vt.downVotes||0);
+      return {id:x.id,name:x.name,place:x.rootPlace?.id||g.rootPlaceId||0,playing:g.playing||0,visits:g.visits??x.placeVisits??0,like:tot?Math.round(vt.upVotes/tot*100):null,img:img[x.id]}});
+  }
+  return {total:all.length+(r.nextPageCursor?"+":""),visits,list};
+}
+async function getGroups(id){
+  const r=await J(`https://groups.roblox.com/v2/users/${id}/groups/roles?includeLocked=false`);
+  const all=(r.data||[]).slice().sort((a,b)=>(b.role?.rank||0)-(a.role?.rank||0)),top=all.slice(0,4);
+  let im={};
+  if(top.length){
+    const t=await J(`https://thumbnails.roblox.com/v1/groups/icons?groupIds=${top.map(x=>x.group.id).join(",")}&size=150x150&format=Png`).catch(()=>({data:[]}));
+    im=Object.fromEntries((t.data||[]).map(x=>[x.targetId,x.imageUrl]));
+  }
+  return {total:all.length,list:top.map(x=>({id:x.group.id,name:x.group.name,role:x.role.name,members:x.group.memberCount||0,img:im[x.group.id]}))};
+}
+async function getItems(id){
+  const r=await J(`https://inventory.roblox.com/v1/users/${id}/assets/collectibles?sortOrder=Desc&limit=100`);
+  const all=(r.data||[]).slice().sort((a,b)=>(b.recentAveragePrice||0)-(a.recentAveragePrice||0)),top=all.slice(0,5);
+  const rap=all.reduce((s,x)=>s+(x.recentAveragePrice||0),0);
+  let im={};
+  if(top.length){
+    const t=await J(`https://thumbnails.roblox.com/v1/assets?assetIds=${top.map(x=>x.assetId).join(",")}&size=150x150&format=Png`).catch(()=>({data:[]}));
+    im=Object.fromEntries((t.data||[]).map(x=>[x.targetId,x.imageUrl]));
+  }
+  return {total:all.length+(r.nextPageCursor?"+":""),rap,list:top.map(x=>({id:x.assetId,name:x.name,rap:x.recentAveragePrice||0,serial:x.serialNumber,img:im[x.assetId]}))};
+}
+async function getBadges(id){
+  const r=await J(`https://badges.roblox.com/v1/users/${id}/badges?limit=100&sortOrder=Desc`);
+  const all=r.data||[];
+  /* rarest first: lowest global award count */
+  const top=all.slice().sort((a,b)=>(a.statistics?.awardedCount??1e12)-(b.statistics?.awardedCount??1e12)).slice(0,8);
+  let im={};
+  if(top.length){
+    const t=await J(`https://thumbnails.roblox.com/v1/badges/icons?badgeIds=${top.map(x=>x.id).join(",")}&size=150x150&format=Png`).catch(()=>({data:[]}));
+    im=Object.fromEntries((t.data||[]).map(x=>[x.targetId,x.imageUrl]));
+  }
+  return {total:all.length+(r.nextPageCursor?"+":""),list:top.map(x=>({id:x.id,name:x.name,awarded:x.statistics?.awardedCount??null,img:im[x.id]}))};
+}
+
+/* ---- demo data ---- */
+function demoProfile(f){
+  const id=Number(f.id)||1,r=n=>((id*9301+n*49297)%233280)/233280;
+  const A=["Building things, breaking things. Always up for an obby run.","Tycoon grinder. Collector. Part-time speedrunner.","Here for the vibes and the limiteds.","Dev by day, player by night. DM for collabs."];
+  return {id:f.id,name:f.name,handle:f.handle||f.name,ver:!!f.ver,about:A[id%A.length],joined:["Mar 2016","Aug 2019","Jan 2021","Nov 2014"][id%4],
+    friends:20+Math.floor(r(1)*480),followers:Math.floor(r(2)*r(3)*60000),following:Math.floor(r(4)*300),
+    pres:{type:f.presenceType||0,loc:f.lastLocation||"",placeId:f.placeId,gameId:f.gameId},body:null,img:f.img,self:false,demo:true};
+}
+function demoSections(d){
+  const id=Number(d.id)||1,r=n=>((id*9301+n*49297)%233280)/233280;
+  const GN=["Builders Club","Tycoon Tribe","Obby Masters","Pixel Guild","Speedrun HQ","Frontier Devs"],RL=["Member","Admin","Owner","Moderator","Member","Rank 12"];
+  const IN=["Crimson Crown","Void Helm","Sparkle Fedora","Golden Visor","Neon Halo","Frost Antlers","Ember Wings"];
+  const BN=["Welcome Aboard","Veteran","Friendship","Explorer","Builder","Night Owl","First Win","Lucky Find","Top Donor","Marathon"];
+  const CN=["Skyline Tycoon","Neon Runner","Cave Quest","Pixel Farm","Orbit Obby","Frost Arena","Candy Heist","Hover Racers"];
+  const items=[0,1,2,3,4].map(i=>({id:0,name:IN[(i+id)%IN.length],rap:Math.floor(1000+r(i+20)*r(i+21)*900000),serial:i%2?Math.floor(r(i+30)*900)+1:null,img:null})).sort((a,b)=>b.rap-a.rap);
+  const cn=2+id%7,cr=[...Array(cn)].map((_,i)=>({id:0,place:0,name:CN[(i+id)%CN.length],playing:Math.floor(r(i+50)*r(i+51)*30000),visits:Math.floor(20000+r(i+52)*40000000),like:80+Math.floor(r(i+53)*18),img:null}));
+  return {
+    creations:{total:cn,visits:cr.reduce((s,x)=>s+x.visits,0),list:cr},
+    groups:{total:GN.length+id%5,list:[0,1,2,3].map(i=>{const k=(i+id)%GN.length;return {id:0,name:GN[k],role:RL[(k+i)%RL.length],members:Math.floor(2000+r(i+7)*900000),img:null}})},
+    items:{total:items.length+id%12,rap:Math.floor(items.reduce((s,x)=>s+x.rap,0)*1.3),list:items},
+    badges:{total:8+id%40,list:[0,1,2,3,4,5,6,7].map(i=>({id:0,name:BN[(i+id)%BN.length],awarded:Math.floor(500+r(i+40)*80000),img:null}))}
+  };
+}
+function demoFriends(d){
+  const pool=(S?.friends||[]).filter(x=>String(x.id)!==String(d.id));
+  if(!pool.length)return null;
+  const o=(Number(d.id)||0)%pool.length,list=[...pool.slice(o),...pool.slice(0,o)].slice(0,6);
+  return {total:list.length+14+(Number(d.id)||0)%30,list};
+}
+
+/* ---- drawing ---- */
+function skel(box,n,cls,inner){box.innerHTML="";for(let i=0;i<n;i++)box.insertAdjacentHTML("beforeend",`<div class="pc ${cls} ld" style="--i:${i}">${inner}</div>`)}
+function drawProfFriends(g,loading,uid){
+  const box=$("#pFriends"),lab=$("#pFT");box.innerHTML="";
+  if(loading){lab.textContent="FRIENDS";for(let i=0;i<6;i++)box.insertAdjacentHTML("beforeend",`<div class="f ld" style="--i:${i}"><div class="av"></div><b></b></div>`);return}
+  if(!g||!g.list.length){lab.textContent="FRIENDS";box.innerHTML=`<div class="pe">${g?"No friends to show yet.":"Friends unavailable right now."}</div>`;return}
+  lab.innerHTML=`FRIENDS <em>· ${g.total}</em>`;
+  g.list.forEach((f,i)=>{const el=createFriendElement(f,i);el.classList.add("pop");el.style.setProperty("--i",i+1);box.appendChild(el)});
+  const left=g.total-g.list.length;
+  if(left>0){const m=createMoreElement(left);m.onclick=()=>openExt(`https://www.roblox.com/users/${uid}/friends`);m.classList.add("pop");m.style.setProperty("--i",g.list.length+1);box.appendChild(m)}
+  icons();
+}
+function drawCreations(g,loading){
+  const box=$("#pCreations"),lab=$("#pCT");
+  if(loading){lab.textContent="CREATIONS";return skel(box,4,"cr",'<div class="th"><div class="c"></div></div><b class="nm"></b>')}
+  box.innerHTML="";
+  if(!g||!g.list.length){lab.textContent="CREATIONS";box.innerHTML=`<div class="pe">${g?"No public experiences yet.":"Creations unavailable right now."}</div>`;return}
+  lab.innerHTML=`CREATIONS <em>· ${g.total}${g.visits?` · ${fmtN(g.visits)} VISITS`:""}</em>`;
+  g.list.forEach((x,i)=>{
+    const d=document.createElement("div");d.className="pc cr";d.style.setProperty("--i",i);
+    const bg=!x.img?` style="background:linear-gradient(135deg,${gradOf(x.name)})"`:"";
+    d.innerHTML=`<div class="th"><div class="c"${bg}>${x.img?`<img src="${x.img}" alt="" loading="lazy" onload="this.classList.add('go')">`:""}</div>${olr(284,160,20)}</div><b class="nm">${esc(x.name)}</b><div class="mt">${x.like!=null?`<span><i data-i="lucide:thumbs-up"></i>${x.like}%</span>`:""}<span><i data-i="lucide:users"></i>${fmtN(x.playing)}</span><span>${fmtN(x.visits)} visits</span></div>`;
+    /* same as Discover: first click selects (and tints the background), second click launches */
+    d.onclick=()=>{
+      if(P.selGame===x){launch(x.place,x.name);return}
+      P.selGame=x;box.querySelectorAll(".cr").forEach(el=>el.classList.remove("sel"));d.classList.add("sel");
+      setBackground(x.img,gradOf(x.name));
+    };
+    box.append(d);
+    const im=d.querySelector("img");if(im&&im.complete)im.classList.add("go");
+  });
+  icons();
+}
+function drawGroups(g,loading){
+  const box=$("#pGroups");
+  if(loading){$("#pGT").textContent="GROUPS";return skel(box,4,"gc",'<div class="c"></div>')}
+  box.innerHTML="";
+  if(!g||!g.list.length){$("#pGT").textContent="GROUPS";box.innerHTML=`<div class="pe">${g?"Not in any groups yet.":"Groups unavailable right now."}</div>`;return}
+  $("#pGT").innerHTML=`GROUPS <em>· ${g.total}</em>`;
+  g.list.forEach((x,i)=>{
+    const d=document.createElement("div");d.className="pc gc";d.style.setProperty("--i",i);
+    d.innerHTML=`<div class="c"></div><div class="gi"${x.img?"":` style="background:linear-gradient(135deg,${gradOf(x.name)})"`}>${x.img?`<img src="${x.img}" alt="">`:esc((x.name||"?")[0])}</div><div class="gt"><b>${esc(x.name)}</b><small>${esc(x.role)}</small><small class="m">${fmtN(x.members)} members</small></div>${olr(284,104,20)}`;
+    if(x.id)d.onclick=()=>openExt(`https://www.roblox.com/groups/${x.id}`);
+    box.append(d);
+  });
+}
+function drawItems(g,loading){
+  const box=$("#pItems"),lab=$("#pIT");
+  if(loading){lab.textContent="COLLECTIBLES";return skel(box,5,"ic",'<div class="th"><div class="c"></div></div><b class="nm"></b>')}
+  box.innerHTML="";
+  if(!g||g==="private"){lab.textContent="COLLECTIBLES";box.innerHTML=`<div class="pe"><div data-i="lucide:lock"></div>${g?"This inventory is private.":"Collectibles unavailable right now."}</div>`;icons();return}
+  lab.innerHTML=`COLLECTIBLES${g.total?` <em>· ${g.total}${g.rap?` · ${fmtN(g.rap)} RAP`:""}</em>`:""}`;
+  if(!g.list.length){box.innerHTML=`<div class="pe">No collectibles yet.</div>`;return}
+  g.list.forEach((x,i)=>{
+    const d=document.createElement("div");d.className="pc ic";d.style.setProperty("--i",i);
+    const bg=x.img?"":` style="background:linear-gradient(135deg,${gradOf(x.name)})"`;
+    d.innerHTML=`<div class="th"><div class="c"${bg}>${x.img?`<img src="${x.img}" alt="" loading="lazy">`:`<div class="ph">${HEX}</div>`}${x.serial?`<span class="sn">#${x.serial}</span>`:""}<span class="pb">${HEX}${fmtN(x.rap)}</span></div>${olr(216,216,20)}</div><b class="nm">${esc(x.name)}</b><div class="mt">${x.serial?"Serial #"+x.serial:"Collectible"}</div>`;
+    if(x.id)d.onclick=()=>openExt(`https://www.roblox.com/catalog/${x.id}`);
+    box.append(d);
+  });
+}
+function drawBadges(g,loading){
+  const box=$("#pBadges"),lab=$("#pBT");
+  if(loading){lab.textContent="BADGES";return skel(box,8,"bd",'<div class="bi"></div><b></b>')}
+  box.innerHTML="";
+  if(!g||!g.list.length){lab.textContent="BADGES";box.innerHTML=`<div class="pe">${g?"No badges yet.":"Badges unavailable right now."}</div>`;return}
+  lab.innerHTML=`BADGES <em>· ${g.total} · RAREST FIRST</em>`;
+  g.list.forEach((x,i)=>{
+    const d=document.createElement("div");d.className="pc bd";d.style.setProperty("--i",i);
+    d.innerHTML=`<div class="bi"${x.img?"":` style="background:linear-gradient(135deg,${gradOf(x.name,40)})"`}>${x.img?`<img src="${x.img}" alt="" loading="lazy">`:"<span>★</span>"}${olc(112)}</div><b>${esc(x.name)}</b><small>${x.awarded!=null?fmtN(x.awarded)+" awarded":"&nbsp;"}</small>`;
+    if(x.id)d.onclick=()=>openExt(`https://www.roblox.com/badges/${x.id}`);
+    box.append(d);
+  });
+}
+function paintHead(d){
+  const st=presInfo(d.pres),av=$("#pAv");
+  $("#pDN").textContent=d.name||"";
+  $("#pVb").innerHTML=d.ver?'<div class="pvb"><div data-i="lucide:check"></div></div>':"";
+  $("#pHandle").textContent=[d.handle?"@"+d.handle:"",d.joined?"Joined "+d.joined:""].filter(Boolean).join(" · ");
+  const se=$("#pStat");se.textContent=st.text;se.className=st.cls;
+  const ab=$("#pAbout");ab.textContent=d.about||"";ab.style.display=d.about?"":"none";
+  av.dataset.online=st.t>0?"true":"false";
+  if(st.t===2)av.dataset.ingame="true";else delete av.dataset.ingame;
+  if(st.t===3)av.dataset.instudio="true";else delete av.dataset.instudio;
+  const r = $("#pRend");
+  const avatarImg = d.body || "";
+  if (r.dataset.k !== avatarImg) {
+    r.dataset.k = avatarImg;
+    if (avatarImg) {
+      r.innerHTML = `<img src="${avatarImg}" alt="${d.name || ""}">`;
+    } else {
+      r.innerHTML = "";
+    }
+  }
+  $("#pStats").innerHTML=[["Friends",d.friends],["Followers",d.followers],["Following",d.following]].map(([l,v])=>`<div><b>${v==null?"–":fmtN(v)}</b><span>${l.toUpperCase()}</span></div>`).join("");
+  const canJoin=!d.self&&st.t===2&&d.pres.placeId;
+  $("#pBtns").innerHTML=`<div class="pbtn r" id="pBack" title="Back"><div data-i="lucide:chevron-left"></div></div>${canJoin?'<div class="pbtn jn" id="pJoin">Join</div>':""}<div class="pbtn" id="pWeb"><div data-i="lucide:external-link"></div>Roblox.com</div>`;
+  $("#pBack").onclick=profileBack;
+  if(canJoin)$("#pJoin").onclick=()=>launch(d.pres.placeId,d.pres.loc||d.name,d.pres.gameId,d.id);
+  $("#pWeb").onclick=()=>openExt(`https://www.roblox.com/users/${d.id}/profile`);
+  icons();
+}
+function openProfile(f,fromBack){
+  if(!f||!f.id)return;
+  const my=++P.req;
+  if(page!=="profile"){P.prev=page;P.hist=[];setPage("profile")}
+  else if(P.cur&&!fromBack&&String(P.cur.id)!==String(f.id))P.hist.push(P.cur);
+  P.cur=f;P.selGame=null;
+  /* instant paint from what we already know, then fill in the rest */
+  paintHead({id:f.id,name:f.name,handle:f.handle||"",ver:!!f.ver,about:"",joined:"",friends:null,followers:null,following:null,
+    pres:{type:f.presenceType||0,loc:f.lastLocation||"",placeId:f.placeId,gameId:f.gameId},body:null,img:f.img,self:f.id===S?.me?.id});
+  ["#pAv","#pName","#pStats","#pBtns"].forEach((s,i)=>{const e=$(s);e.classList.remove("sw");void e.offsetWidth;e.style.animationDelay=i*60+"ms";e.classList.add("sw")});
+  $("#pScroll").scrollTo({top:0,behavior:"instant"});
+  drawProfFriends(null,true);drawCreations(null,true);drawGroups(null,true);drawItems(null,true);drawBadges(null,true);
+  setBackground(f.img,gradOf(f.name));
+  loadProfile(f,my);
+}
+async function loadProfile(f,my){
+  let d=null;
+  try{d=await loadProfileHead(f)}catch(e){}
+  if(my!==P.req)return;
+  const demo=!d;if(demo)d=demoProfile(f);
+  paintHead(d);setBackground(d.body||d.img,gradOf(d.name));
+  if(demo){
+    const x=demoSections(d);
+    drawProfFriends(demoFriends(d),false,d.id);drawCreations(x.creations);drawGroups(x.groups);drawItems(x.items);drawBadges(x.badges);return;
+  }
+  const run=(p,draw,onErr)=>p.then(g=>{if(my===P.req)draw(g)}).catch(e=>{if(my===P.req)draw(onErr?onErr(e):null)});
+  run(getFriends(d.id),g=>drawProfFriends(g,false,d.id));
+  run(getCreations(d.id),drawCreations);
+  run(getGroups(d.id),drawGroups);
+  run(getItems(d.id),drawItems,e=>String(e?.message)==="403"?"private":null);
+  run(getBadges(d.id),drawBadges);
+}
+/* back steps through profiles you opened from other profiles, then returns to the page you came from */
+function profileBack(){
+  if(P.hist.length)return openProfile(P.hist.pop(),true);
+  setPage(P.prev&&P.prev!=="profile"?P.prev:"home");
+}
+function profileLeave(){P.hist=[];P.cur=null;P.req++;}
+/* friend tile: clicking the avatar of someone who is in a game joins them, everything else opens their profile */
+function friendClick(e,f){
+  if(f.presenceType===2&&f.placeId&&e.target.closest(".av")){launch(f.placeId,f.lastLocation||f.name,f.gameId,f.id);return}
+  openProfile(f);
+}
+addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&page==="profile"&&loginOverlay.classList.contains("gone")&&e.target.tagName!=="INPUT")profileBack();
+});
+
+
+    /* ===== Login Overlay Logic ===== */
+    const lCk = $("#lCk"), lField = $("#lField"), lMsg = $("#lMsg"), lGo = $("#lGo"), lDot = $("#lDot"), lStatus = $("#lStatus"), loginOverlay = $("#loginOverlay");
+    function setLoginState(s, t) {
+      lField.classList.remove("bad", "ok"); lDot.className = "";
+      if (s === "bad") { void lField.offsetWidth; lField.classList.add("bad"); lDot.classList.add("bad"); lStatus.textContent = "Invalid cookie" }
+      else if (s === "ok") { lField.classList.add("ok"); lDot.classList.add("ok"); lStatus.textContent = "Connected" }
+      else lStatus.textContent = localStorage.getItem("rbxCookie") ? "Cookie saved" : "Not connected";
+      if (t) { lMsg.textContent = t; lMsg.classList.add("on") } else lMsg.classList.remove("on");
+    }
+    function cleanCookie(v) {
+      v = (v || "").trim().replace(/^["']|["']$/g, "");
+      const m = v.match(/\.?ROBLOSECURITY\s*=\s*([^;\s]+)/i);
+      return m ? m[1] : v;
+    }
+    lCk.addEventListener("input", () => setLoginState());
+    lCk.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter") submitLogin() });
+    $("#lEye").onclick = () => {
+      const show = lCk.type === "password"; lCk.type = show ? "text" : "password";
+      const e = $("#lEye [data-i]"); e.dataset.i = show ? "lucide:eye-off" : "lucide:eye"; e.removeAttribute("data-done"); icons();
+    };
+    $("#lPaste").onclick = async () => {
+      try { lCk.value = await navigator.clipboard.readText(); lCk.dispatchEvent(new Event("input")); lCk.focus() }
+      catch { lCk.focus() }
+    };
+    async function verifyCookie(c) {
+      const f = window.__TAURI__?.http?.fetch;
+      if (!f) return true; // In plain browser without Tauri, bypass CORS check
+      try {
+        const r = await f("https://users.roblox.com/v1/users/authenticated", { headers: { Cookie: ".ROBLOSECURITY=" + c } });
+        return r.ok;
+      } catch (e) {
+        console.warn("Verification request error:", e);
+        return false;
+      }
+    }
+    async function submitLogin() {
+      const c = cleanCookie(lCk.value);
+      const saved = localStorage.getItem("rbxCookie") || "";
+      if (!c) {
+        if (saved) {
+          $("#lGoT").textContent = "Connected";
+          setLoginState("ok");
+          localStorage.setItem("csSeenLogin", "1");
+          setTimeout(() => $("#lFade").classList.add("on"), 300);
+          setTimeout(() => {
+            loginOverlay.classList.add("gone");
+            $("#lFade").classList.remove("on");
+            if (!S) init();
+          }, 750);
+          return;
+        }
+        return setLoginState("bad", "Paste your .ROBLOSECURITY cookie first.");
+      }
+      if (c.length < 100 || (!/^_\|WARNING/i.test(c) && c.length < 200)) {
+        return setLoginState("bad", "That doesn't look like a valid cookie.");
+      }
+      lGo.classList.add("busy"); $("#lGoT").textContent = "Connecting";
+      const ok = await verifyCookie(c);
+      lGo.classList.remove("busy"); $("#lGoT").textContent = "Continue";
+      if (!ok) return setLoginState("bad", "Roblox rejected that cookie. It may have expired.");
+      setLoginState("ok");
+      $("#lGoT").textContent = "Connected";
+      const isChanged = (saved !== c);
+      localStorage.setItem("rbxCookie", c);
+      localStorage.setItem("csSeenLogin", "1");
+      cfg.cookie = c;
+      setTimeout(() => $("#lFade").classList.add("on"), 350);
+      setTimeout(() => {
+        loginOverlay.classList.add("gone");
+        $("#lFade").classList.remove("on");
+        if (isChanged || !S) init();
+      }, 850);
+    }
+    lGo.onclick = submitLogin;
+
+    $("#lLogo").onclick = () => {
+      if (localStorage.getItem("rbxCookie")) {
+        loginOverlay.classList.add("gone");
+        init();
+      }
+    };
+    addEventListener("keydown", e => {
+      if (e.key === "Escape" && !loginOverlay.classList.contains("gone") && localStorage.getItem("rbxCookie")) {
+        loginOverlay.classList.add("gone");
+      }
+    });
+
+    function openLogin() {
+      loginOverlay.classList.remove("gone");
+      fit();
+      if (localStorage.getItem("rbxCookie")) {
+        lCk.placeholder = "A cookie is already saved. Paste a new one to replace it.";
+        lStatus.textContent = "Cookie saved";
+        lDot.className = "ok";
+      } else {
+        lStatus.textContent = "Not connected";
+        lDot.className = "";
+      }
+      setTimeout(() => lCk.focus(), 400);
+    }
+
+    // Initial display: show login screen so user sees what it looks like
+    if (!localStorage.getItem("csSeenLogin")) {
+      openLogin();
+    } else {
+      loginOverlay.classList.add("gone");
+    }
+
+    document.getElementById("gear").onclick = () => openLogin();
+    document.getElementById("me").onclick = document.getElementById("meName").onclick = () => {
+      if (!cfg.cookie || !S?.me?.id) return openLogin();
+      openProfile({ id: S.me.id, name: S.me.name, handle: "", img: S.me.img, presenceType: 1 });
+    };
+
+    /* ============ Real-time Presence & Polling ============ */
+    let presenceTimer = null, currencyTimer = null, demoSimTimer = null;
+
+    async function updatePresences() {
+      if (!cfg.cookie || !S || !S.friends || !S.friends.length) return;
+      const allIds = S.friends.map(f => f.id).filter(Boolean);
+      if (!allIds.length) return;
+
+      try {
+        const pMap = await fetchPresences(allIds);
+        let changed = false;
+
+        for (const f of S.friends) {
+          const p = pMap[f.id];
+          if (p !== undefined) {
+            const newType = p.userPresenceType || 0;
+            const newLoc = p.lastLocation || "";
+            const newPlace = p.placeId || p.rootPlaceId || null;
+            const newGame = p.gameId || null;
+            if (f.presenceType !== newType || f.lastLocation !== newLoc || f.placeId !== newPlace || f.gameId !== newGame) {
+              f.presenceType = newType;
+              f.online = newType > 0;
+              f.inGame = newType === 2;
+              f.inStudio = newType === 3;
+              f.lastLocation = newLoc;
+              f.placeId = newPlace;
+              f.gameId = newGame;
+              changed = true;
+            }
+          }
+        }
+
+        if (changed) {
+          S.friends = sortFriendsList(S.friends);
+          for (const f of S.friends.slice(0, 10)) {
+            if (!f.img) await ensureFriendVisuals(f);
+          }
+          renderFriendsWithAnimation(S.friends, false);
+          icons();
+        }
+      } catch (e) {
+        console.warn("Presence update error:", e);
+      }
+    }
+
+    async function updateCurrency() {
+      if (!cfg.cookie || !S || !S.me || !S.me.id) return;
+      try {
+        const cur = await J(`https://economy.roblox.com/v1/users/${S.me.id}/currency`);
+        if (cur && typeof cur.robux === "number") {
+          S.me.robux = cur.robux;
+          $("#rb").textContent = fmt(cur.robux);
+        }
+      } catch (e) { }
+    }
+
+    function startBackgroundPolling() {
+      clearInterval(presenceTimer);
+      clearInterval(currencyTimer);
+      clearInterval(demoSimTimer);
+
+      if (cfg.cookie) {
+        // Poll real friend presences frequently (every 3.5 seconds)
+        presenceTimer = setInterval(updatePresences, 3500);
+        // Poll robux balance every 35 seconds
+        currencyTimer = setInterval(updateCurrency, 35000);
+      } else {
+        // Demo mode: cycle presence states to demonstrate smooth sliding reordering & studio ring
+        demoSimTimer = setInterval(() => {
+          if (!S || !S.friends || !S.friends.length) return;
+          const idx = Math.floor(Math.random() * S.friends.length);
+          const f = S.friends[idx];
+          const cycle = [0, 2, 3, 1];
+          const curIdx = cycle.indexOf(f.presenceType);
+          const nextType = cycle[(curIdx + 1 + Math.floor(Math.random() * (cycle.length - 1))) % cycle.length];
+          f.presenceType = nextType;
+          f.online = nextType > 0;
+          f.inGame = nextType === 2;
+          f.inStudio = nextType === 3;
+          if (nextType === 2) {
+            f.lastLocation = "Blox Fruits";
+            f.placeId = 2753915549;
+            f.gameId = "demo-server-" + Math.floor(Math.random() * 9000 + 1000);
+          } else if (nextType === 3) {
+            f.lastLocation = "Studio Workspace";
+            f.placeId = null;
+            f.gameId = null;
+          } else {
+            f.lastLocation = "";
+            f.placeId = null;
+            f.gameId = null;
+          }
+          S.friends = sortFriendsList(S.friends);
+          renderFriendsWithAnimation(S.friends, false);
+        }, 6000);
+      }
+    }
+
+    // Window focus refreshes immediately
+    window.addEventListener("focus", () => {
+      if (cfg.cookie) {
+        updatePresences();
+        updateCurrency();
+      }
+    });
+
+    async function init() {
+      try { if (!cfg.cookie) throw 0; S = await loadReal() } catch (e) { S = demo() }
+      $("#rb").textContent = fmt(S.me.robux); $("#meName").textContent = S.me.name;
+      if (S.me.img) $("#me").style.backgroundImage = `url(${S.me.img})`;
+      drawFriends(); drawTiles(); select(0); startBackgroundPolling();
+      icons();
+      // Check for updates silently 3 s after UI loads
+      setTimeout(checkForUpdate, 3000);
+    }
+    init();
+
+    // ===== Auto-updater =====
+    (function () {
+      const banner = $("#updateBanner");
+      const msg = $("#updateMsg");
+      const btn = $("#updateBtn");
+      const dismiss = $("#updateDismiss");
+
+      async function checkForUpdate() {
+        try {
+          const invoke = window.__TAURI__?.core?.invoke;
+          if (!invoke) return;
+          const result = await invoke("check_update");
+          if (result && result.available) {
+            msg.textContent = `v${result.version} is available`;
+            banner.classList.add("on");
+          }
+        } catch (e) {
+          // silent — updater not critical
+        }
+      }
+      window.checkForUpdate = checkForUpdate;
+
+      if (btn) btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "Downloading…";
+        try {
+          const invoke = window.__TAURI__?.core?.invoke;
+          if (invoke) await invoke("install_update");
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = "Update & Restart";
+        }
+      });
+
+      if (dismiss) dismiss.addEventListener("click", () => {
+        banner.classList.remove("on");
+      });
+    })();
+
+    // Window control actions & dragging via Tauri
+    (function () {
+      const appWindow = window.__TAURI__?.window?.getCurrentWindow();
+      const minBtn = document.getElementById("win-min");
+      const maxBtn = document.getElementById("win-max");
+      const closeBtn = document.getElementById("win-close");
+
+      if (minBtn) minBtn.onclick = () => appWindow?.minimize();
+      if (maxBtn) maxBtn.onclick = () => appWindow?.toggleMaximize();
+      if (closeBtn) closeBtn.onclick = () => appWindow?.close();
+
+      // Dragging support from top header
+      const topDrag = document.getElementById("top-drag-region");
+      if (topDrag && appWindow) {
+        topDrag.addEventListener("mousedown", async (e) => {
+          if (e.buttons === 1 && !e.target.closest("button, a, input, #logo, #nav, #right, #win-controls")) {
+            try {
+              await appWindow.startDragging();
+            } catch (err) { }
+          }
+        });
+        topDrag.addEventListener("dblclick", async (e) => {
+          if (!e.target.closest("button, a, input, #logo, #nav, #right, #win-controls")) {
+            try {
+              await appWindow.toggleMaximize();
+            } catch (err) { }
+          }
+        });
+      }
+
+      // Dragging support on stage drag region
+      const stageDrag = document.getElementById("stage-drag-region");
+      if (stageDrag && appWindow) {
+        stageDrag.addEventListener("mousedown", async (e) => {
+          if (e.buttons === 1) {
+            try {
+              await appWindow.startDragging();
+            } catch (err) { }
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+
+</html>

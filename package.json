@@ -1,0 +1,10 @@
+{
+  "name": "sleeps-launcher",
+  "private": true,
+  "scripts": {
+    "tauri": "npm --prefix roblox-launcher run tauri",
+    "dev": "npm --prefix roblox-launcher run tauri dev",
+    "build": "npm --prefix roblox-launcher run tauri build"
+  }
+}
+

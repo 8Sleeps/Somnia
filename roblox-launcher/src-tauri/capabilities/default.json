@@ -1,0 +1,46 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "opener:default",
+    "updater:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "roblox:*" },
+        { "url": "roblox://*" },
+        { "url": "https://chromewebstore.google.com/*" },
+        { "url": "https://*.google.com/*" },
+        { "url": "https://*.roblox.com/*" },
+        { "url": "https://roblox.com/*" }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://users.roblox.com/*" },
+        { "url": "https://presence.roblox.com/*" },
+        { "url": "https://economy.roblox.com/*" },
+        { "url": "https://friends.roblox.com/*" },
+        { "url": "https://thumbnails.roblox.com/*" },
+        { "url": "https://games.roblox.com/*" },
+        { "url": "https://apis.roblox.com/*" },
+        { "url": "https://groups.roblox.com/*" },
+        { "url": "https://inventory.roblox.com/*" },
+        { "url": "https://badges.roblox.com/*" },
+        { "url": "https://*.rbxcdn.com/*" },
+        { "url": "https://api.iconify.design/*" },
+        { "url": "https://github.com/8Sleeps/Somnia/*" },
+        { "url": "https://objects.githubusercontent.com/*" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Somnia",
+  "version": "0.1.0",
+  "identifier": "com.7sleeps.somnia",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQyOTVCOTJCRUI2OTE2NTgKUldSWUZtbnJLN21WUWp5eWpnVm9WZUxqQmJieHZDTlZvVUlmeWZkT0pGaVdRM1RyZjBPWURNeWcK",
+      "endpoints": [
+        "https://github.com/8Sleeps/Somnia/releases/latest/download/latest.json"
+      ]
+    }
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-attr 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; img-src 'self' data: https://*.rbxcdn.com https://static.wikia.nocookie.net; connect-src 'self' https://users.roblox.com https://presence.roblox.com https://economy.roblox.com https://friends.roblox.com https://thumbnails.roblox.com https://games.roblox.com https://apis.roblox.com https://api.iconify.design; font-src 'self' data:;"
+    },
+    "windows": [
+      {
+        "title": "Somnia",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 960,
+        "minHeight": 600,
+        "resizable": true,
+        "decorations": false
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "dmg",
+      "app"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

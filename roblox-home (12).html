@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roblox Launcher</title>
+<style>
+:root{--spring:cubic-bezier(.34,1.56,.64,1);--out:cubic-bezier(.16,1,.3,1);--io:cubic-bezier(.65,0,.35,1);--mute:#7d7f98}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#15162a;user-select:none;-webkit-user-select:none}
+#bg{position:fixed;inset:0;overflow:hidden;background:radial-gradient(120% 70% at 50% 100%,#3b2418,#15162a 70%)}
+#bg i{position:absolute;inset:-60px;background:center/cover;filter:blur(22px) brightness(.5) saturate(1.1);opacity:0;transition:opacity .9s var(--io)}
+#bg i.on{opacity:1}
+#bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#1b1c31 0,rgba(27,28,49,.97) 14%,rgba(27,28,49,.86) 36%,rgba(20,18,28,.45) 62%,rgba(10,10,16,.55) 100%)}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;color:#fff;font-family:"Builder Sans","Gotham","Inter","Segoe UI",system-ui,sans-serif}
+.abs{position:absolute}
+[data-i]{display:block}[data-i] svg{display:block;width:100%;height:100%;overflow:visible}
+
+/* Intro animations use fill-mode "backwards" so they RELEASE the element afterwards and hover transforms still work */
+.pop{animation:pop .75s var(--spring) backwards;animation-delay:calc(var(--i,0)*55ms + 120ms)}
+.drop{animation:drop .75s var(--spring) backwards;animation-delay:calc(var(--i,0)*65ms + 60ms)}
+@keyframes pop{from{opacity:0;transform:translateY(22px) scale(.82)}to{transform:none}}
+@keyframes drop{from{opacity:0;transform:translateY(-26px)}to{transform:none}}
+@keyframes slideR{from{opacity:0;transform:translateX(140px) scale(.92)}to{transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes swap{from{opacity:0;transform:translateY(16px)}to{transform:none}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes cdraw{from{stroke-dashoffset:100;opacity:0}15%{opacity:1}to{stroke-dashoffset:0}}
+
+/* Outline strokes: they sit OUTSIDE the object with a gap, are drawn with butt caps (no stray dot),
+   and animate through a transition so they draw in AND retract. pathLength=100 on every outline. */
+.sk{fill:none;stroke-width:3;stroke-linecap:butt;stroke-dasharray:100 100;stroke-dashoffset:100;transition:stroke-dashoffset .75s var(--io)}
+.ol{position:absolute;overflow:visible;pointer-events:none}
+
+/* top bar */
+#logo{left:65px;top:65px;width:48px;height:48px;color:#e9eaf1;cursor:pointer}
+#nav{left:154px;top:65px;height:48px;display:flex;gap:41px;align-items:center;font-size:24px;font-weight:500;letter-spacing:.01em}
+#nav a{color:var(--mute);cursor:pointer;position:relative;transition:color .35s var(--io),transform .45s var(--spring)}
+#nav a.on,#nav a:hover{color:#fff}
+#nav a:hover{transform:translateY(-3px)}
+#nav a::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:3px;border-radius:2px;background:#fff;transform:scaleX(0);transition:transform .45s var(--out)}
+#nav a.on::after{transform:scaleX(1)}
+#create{position:relative;margin-left:-14px;width:122px;height:48px;border-radius:24px;background:#0e0f1d;box-shadow:inset 0 0 0 1px #25263d;color:#00a2ff;font-weight:700;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .5s var(--spring),background .3s}
+#create .ol{left:-9px;top:-9px;width:140px;height:66px}
+#create .sk{stroke:#00a2ff;transition-duration:.75s}
+#create:hover{transform:scale(1.06);background:#12142a}
+#create:hover .sk{stroke-dashoffset:0}
+#right{right:0;top:65px;height:48px}
+#robux{left:-330px;top:0;display:flex;align-items:center;gap:16px;font-size:24px;font-weight:700;cursor:pointer}
+#rbi{display:block;width:40px;height:40px;transition:transform .5s var(--spring)}
+#rb{display:inline-block;transform-origin:left center;transition:transform .5s var(--spring)}
+#robux:hover #rbi{transform:scale(1.15)}
+#robux:hover #rb{transform:translateX(6px) scale(1.08)}
+#gear{left:-203px;top:5px;width:38px;height:38px;color:#9a9cb2;cursor:pointer;transition:transform .8s var(--spring),color .3s}
+#gear:hover{transform:rotate(90deg) scale(1.12);color:#fff}
+#gear svg{display:block;width:100%;height:100%}
+#me{left:-132px;top:0;width:48px;height:48px;border-radius:50%;background:#26273f center/cover;box-shadow:0 0 0 2px #2c2e48;cursor:pointer;transition:transform .5s var(--spring)}
+#me:hover{transform:scale(1.12)}
+#meName{left:-150px;top:56px;width:84px;text-align:center;font-size:11px;opacity:.14}
+
+/* section labels */
+.sec{left:64px;width:1856px;height:16px;display:flex;align-items:center;gap:16px;font-size:12px;font-weight:700;letter-spacing:.07em;color:#6d6f88}
+.sec s{flex:1;height:1px;background:linear-gradient(90deg,#4a4c68,#34364f 65%,transparent 88%);transform-origin:left;animation:grow .8s var(--out) .3s backwards}
+
+/* friends */
+#friends{left:64px;top:226px;display:flex;gap:37px}
+.f{width:130px;display:flex;flex-direction:column;align-items:center;cursor:pointer;white-space:nowrap}
+.av{position:relative;width:130px;height:130px;border-radius:50%;background:#1f2038 center/cover;box-shadow:0 0 0 2px rgba(255,255,255,.07),0 10px 24px rgba(0,0,0,.25);transition:transform .55s var(--spring),box-shadow .4s}
+.av img{width:100%;height:100%;border-radius:50%;display:block}
+.av .ol{left:-10px;top:-10px;width:150px;height:150px;transform:rotate(-90deg)}
+.av .sk{stroke:#fff;transition-duration:.75s}
+.f:hover .av{transform:scale(1.09);box-shadow:0 0 0 2px rgba(255,255,255,.12),0 18px 30px rgba(0,0,0,.4)}
+.f:hover .sk{stroke-dashoffset:0}
+.f:active .av{transform:scale(.97);transition-duration:.15s}
+.f b,.f small{transition:transform .5s var(--spring)}
+.f b{margin-top:10px;font-size:20px;font-weight:500;line-height:24px}
+.f small{font-size:12px;line-height:14px;color:#6f7188}
+.f:hover b,.f:hover small{transform:translateY(9px)}
+.vb{position:absolute;right:-2px;bottom:0;width:22px;height:22px;border-radius:50%;background:#0b6cff;box-shadow:0 0 0 2px #1b1c31;display:grid;place-items:center;color:#fff}
+.vb [data-i]{width:13px;height:13px}.vb g{stroke-width:3.4}
+.more .av{display:grid;place-items:center;background:#262739;text-align:center;line-height:1}
+.more strong{display:block;font-size:34px;font-weight:700}
+.more em{font-style:normal;font-size:14px;color:#5b5d75;font-weight:600;display:block;margin-top:4px;letter-spacing:.04em}
+
+/* recently played */
+#hd{left:65px;top:518px;height:96px}
+#hd h1{margin:0;font-size:32px;line-height:54px;font-weight:700;display:flex;align-items:center;gap:12px}
+#hd p{margin:0;font-size:22px;line-height:30px;color:#9a9cb2}
+#hd p span{color:#d6d7e3;font-weight:500}
+.sw{animation:swap .6s var(--spring) backwards}
+#rail{left:0;top:590px;width:1920px;height:330px;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 44px);mask-image:linear-gradient(90deg,transparent 0,#000 44px)}
+#track{position:absolute;left:0;top:44px;transition:transform .75s cubic-bezier(.22,1,.36,1)}
+/* each tile owns its outline, so the stroke always travels with the card */
+.t{position:absolute;top:0;pointer-events:auto;width:392px;height:230px;opacity:.93;cursor:pointer;transition:transform .55s var(--spring),opacity .4s;animation:slideR .85s var(--out) backwards;animation-delay:calc(var(--i)*80ms + 330ms)}
+.t .c{position:absolute;inset:0;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#34365a,#1d1e35) center/cover;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.t img{width:100%;height:100%;object-fit:cover;display:block}
+.t .ol{left:-10px;top:-10px;width:412px;height:250px}
+.t .sk{stroke:#d3d4e0;transition-duration:.85s}
+.t:hover{transform:scale(1.045);opacity:1}
+.t.sel{opacity:1}
+.t.sel .sk{stroke-dashoffset:0}
+#play{left:64px;top:888px;width:135px;height:48px;border-radius:6px;background:#00b06a;font-size:18px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .5s var(--spring),background .3s,box-shadow .4s;overflow:hidden}
+#play:hover{transform:translateY(-3px) scale(1.06);background:#00c577;box-shadow:0 10px 24px rgba(0,176,106,.35)}
+#play:active{transform:scale(.95);transition-duration:.12s}
+#play::before{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);transform:translateX(-120%)}
+#play:hover::before{transform:translateX(120%);transition:transform .7s var(--io)}
+#age{left:380px;top:884px;width:84px;text-align:right;font-size:12px;color:#7b7d94;line-height:14px}
+
+/* discover */
+#disc{left:0;top:945px;width:1920px;text-align:center;cursor:pointer}
+#disc b{display:block;font-size:24px;font-weight:800;letter-spacing:.01em;line-height:46px;transition:transform .5s var(--spring)}
+#disc [data-i]{width:40px;height:40px;margin:11px auto 0;color:#fff;animation:bob 1.9s var(--io) infinite}
+#disc g{stroke-width:2.8}
+#disc path{stroke-dasharray:100 100;animation:cdraw .6s var(--io) .9s backwards}
+#disc:hover b{transform:translateY(-5px)}
+
+/* ===== page views ===== */
+.view{position:absolute;inset:0;pointer-events:none;transition:opacity .5s var(--io),transform .7s var(--out),filter .5s var(--io),visibility 0s}
+.view:not(.off) .abs,.view:not(.off) [data-click]{pointer-events:auto}
+.view.off{opacity:0;transform:translateY(28px) scale(.985);filter:blur(6px);visibility:hidden;transition:opacity .4s var(--io),transform .5s var(--io),filter .4s var(--io),visibility 0s .5s}
+body.disc #bg i.on{opacity:.38}
+#nav a[data-p]{cursor:pointer}
+/* ===== discover ===== */
+#dpage .sec s{animation:none;transition:transform .9s var(--out) .15s}
+#dpage.off .sec s{transform:scaleX(0)}
+#chips{left:58px;top:206px;width:1410px;height:60px;padding:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;scroll-behavior:smooth;cursor:grab;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--ml,0px),#000 calc(100% - var(--mr,0px)),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 var(--ml,0px),#000 calc(100% - var(--mr,0px)),transparent 100%)}
+#chips::-webkit-scrollbar{display:none}
+#chips.drag{cursor:grabbing;scroll-behavior:auto}
+#chipsIn{position:relative;display:flex;gap:12px;width:max-content;padding-right:6px}
+#pill{position:absolute;left:0;top:0;height:48px;border-radius:24px;background:#fff;opacity:0;transition:transform .6s var(--spring),width .6s var(--spring),opacity .3s}
+.chip{position:relative;z-index:1;height:48px;padding:0 26px;border-radius:24px;display:flex;align-items:center;font-size:20px;font-weight:600;color:#c3c5d8;background:rgba(255,255,255,.07);cursor:pointer;white-space:nowrap;transition:transform .45s var(--spring),color .3s,background .4s}
+.chip:hover{transform:scale(1.06);color:#fff}
+.chip.on{color:#15162a;background:transparent}
+.chip.on:hover{color:#15162a}
+#sbox{left:1496px;top:212px;width:360px;height:48px;border-radius:24px;background:rgba(255,255,255,.07);display:flex;align-items:center;gap:12px;padding:0 20px;color:#9a9cb2;transition:transform .5s var(--spring),background .3s,color .3s}
+#sbox [data-i]{width:22px;height:22px;flex:none}
+#sbox input{flex:1;min-width:0;background:none;border:0;outline:0;color:#fff;font-size:18px;font-weight:500;font-family:inherit}
+#sbox input::placeholder{color:#7d7f98}
+#sbox .ol{left:-9px;top:-9px;width:378px;height:66px}
+#sbox .sk{stroke:#d3d4e0}
+#sbox:hover{background:rgba(255,255,255,.1);color:#fff}
+#sbox:focus-within{transform:scale(1.02);color:#fff}
+#sbox:focus-within .sk{stroke-dashoffset:0}
+#gridWrap{left:0;top:276px;width:1920px;height:804px;overflow-y:auto;overflow-x:hidden;padding:34px 64px 160px;scrollbar-width:none;scroll-behavior:smooth;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 14px,#000 calc(100% - 110px),transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 14px,#000 calc(100% - 110px),transparent 100%)}
+#gridWrap::-webkit-scrollbar{display:none}
+#grid{display:grid;grid-template-columns:repeat(5,336px);column-gap:28px;row-gap:44px;transition:opacity .28s var(--io),filter .28s var(--io);will-change:opacity}
+#grid.swap{opacity:0;filter:blur(3px)}
+.g{width:336px;cursor:pointer;animation:pop .7s var(--spring) backwards;animation-delay:calc(var(--i)*45ms)}
+.g .th{position:relative;width:336px;height:189px;transition:transform .55s var(--spring)}
+.g .c{position:absolute;inset:0;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#34365a,#1d1e35) center/cover;transition:background .5s var(--io);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.g .c img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s var(--io)}
+.g .c img.go{opacity:1}
+.g .ol{left:-10px;top:-10px;width:356px;height:209px}
+.g .sk{stroke:#d3d4e0;transition-duration:.8s}
+.g:hover .th{transform:scale(1.045)}
+.g:hover .sk{stroke-dashoffset:0}
+.g:active .th{transform:scale(.985);transition-duration:.15s}
+.g .nm,.g .mt{transition:transform .5s var(--spring)}
+.g .nm{display:block;margin-top:14px;font-size:20px;font-weight:600;line-height:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g .mt{display:flex;gap:18px;margin-top:4px;height:18px;font-size:14px;color:#8d8fa8}
+.g .mt span{display:flex;align-items:center;gap:6px}
+.g .mt [data-i]{width:15px;height:15px}.g .mt g{stroke-width:2.4}
+.g:hover .nm,.g:hover .mt{transform:translateY(12px)}
+.g .pb{position:absolute;right:10px;bottom:10px;display:flex;align-items:center;gap:6px;height:30px;padding:0 11px 0 8px;border-radius:9px;background:rgba(20,21,36,.8);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);font-size:16px;font-weight:700}
+.g .pb svg{width:17px;height:17px}
+#toast{right:64px;top:968px;height:56px;display:flex;align-items:center;gap:14px;font-size:17px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 4px 18px rgba(0,0,0,.55);opacity:0;pointer-events:none;white-space:nowrap}
+#toastLogo{width:26px;height:26px;color:#fff;flex:none;filter:drop-shadow(0 4px 14px rgba(0,0,0,.55))}
+#toastLogo svg{display:block;width:100%;height:100%}
+#toast.on{animation:toastShow 6s both}
+#toast.on #toastLogo{animation:toastSpin 2.3s var(--io) infinite}
+@keyframes toastShow{0%{opacity:0;transform:translateX(68px) scale(.94)}9%{opacity:1;transform:none;animation-timing-function:var(--spring)}85%{opacity:1;transform:none}100%{opacity:0;transform:translateX(52px) scale(.97)}}
+@keyframes toastSpin{0%{transform:rotate(0deg)}42%{transform:rotate(360deg)}100%{transform:rotate(360deg)}}
+.g.ld{cursor:default}.g.ld .c{animation:pulse 1.3s var(--io) infinite;animation-delay:calc(var(--i)*80ms)}
+.g.ld .nm{width:70%;height:16px;margin-top:18px;border-radius:8px;background:rgba(255,255,255,.08)}
+.g.ld .mt{width:40%;border-radius:7px;background:rgba(255,255,255,.05)}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+#empty{grid-column:1/-1;padding:120px 0;text-align:center;font-size:24px;font-weight:600;color:#9a9cb2;line-height:34px}
+#empty small{display:block;font-size:16px;font-weight:500;color:#6d6f88}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="bg"><i></i><i></i></div>
+<div id="stage">
+  <div id="logo" class="abs drop" data-i="simple-icons:roblox"></div>
+  <nav id="nav" class="abs"><a class="on drop" style="--i:1" data-p="home">Home</a><a class="drop" style="--i:2" data-p="discover">Discover</a><a class="drop" style="--i:3">Marketplace</a><div id="create" class="drop" style="--i:4">Create<svg class="ol" viewBox="0 0 140 66"><rect class="sk" x="1.500" y="1.500" width="137" height="63" rx="31.500" pathLength="100"/></svg></div></nav>
+  
+
+  <div id="right" class="abs">
+    <div id="robux" class="abs drop" style="--i:3"><span id="rbi"></span><span id="rb">1B+</span></div>
+    <div id="gear" class="abs drop" style="--i:4"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="currentColor" d="M18.1 11c-3.9 0-7 3.1-7 7s3.1 7 7 7s7-3.1 7-7s-3.1-7-7-7m0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5s5 2.2 5 5s-2.2 5-5 5"/><path fill="currentColor" d="m32.8 14.7l-2.8-.9l-.6-1.5l1.4-2.6c.3-.6.2-1.4-.3-1.9l-2.4-2.4c-.5-.5-1.3-.6-1.9-.3l-2.6 1.4l-1.5-.6l-.9-2.8C21 2.5 20.4 2 19.7 2h-3.4c-.7 0-1.3.5-1.4 1.2L14 6c-.6.1-1.1.3-1.6.6L9.8 5.2c-.6-.3-1.4-.2-1.9.3L5.5 7.9c-.5.5-.6 1.3-.3 1.9l1.3 2.5c-.2.5-.4 1.1-.6 1.6l-2.8.9c-.6.2-1.1.8-1.1 1.5v3.4c0 .7.5 1.3 1.2 1.5l2.8.9l.6 1.5l-1.4 2.6c-.3.6-.2 1.4.3 1.9l2.4 2.4c.5.5 1.3.6 1.9.3l2.6-1.4l1.5.6l.9 2.9c.2.6.8 1.1 1.5 1.1h3.4c.7 0 1.3-.5 1.5-1.1l.9-2.9l1.5-.6l2.6 1.4c.6.3 1.4.2 1.9-.3l2.4-2.4c.5-.5.6-1.3.3-1.9l-1.4-2.6l.6-1.5l2.9-.9c.6-.2 1.1-.8 1.1-1.5v-3.4c0-.7-.5-1.4-1.2-1.6m-.8 4.7l-3.6 1.1l-.1.5l-.9 2.1l-.3.5l1.8 3.3l-2 2l-3.3-1.8l-.5.3q-1.05.6-2.1.9l-.5.1l-1.1 3.6h-2.8l-1.1-3.6l-.5-.1l-2.1-.9l-.5-.3l-3.3 1.8l-2-2l1.8-3.3l-.3-.5Q8 22.05 7.7 21l-.1-.5L4 19.4v-2.8l3.4-1l.2-.5c.2-.8.5-1.5.9-2.2l.3-.5l-1.7-3.3l2-2l3.2 1.8l.5-.3c.7-.4 1.4-.7 2.2-.9l.5-.2L16.6 4h2.8l1.1 3.5l.5.2q1.05.3 2.1.9l.5.3l3.3-1.8l2 2l-1.8 3.3l.3.5q.6 1.05.9 2.1l.1.5l3.6 1.1z"/></svg></div>
+    <div id="me" class="abs drop" style="--i:5"></div><div id="meName" class="abs">username</div>
+  </div>
+
+  <div id="toast" class="abs"><div id="toastLogo" data-i="simple-icons:roblox"></div><span id="toastMsg">LAUNCHING...</span></div>
+  <div id="home" class="view">
+  <div class="sec abs" style="top:173px">FRIENDS LIST<s></s></div>
+  <div id="friends" class="abs"></div>
+
+  <div class="sec abs" style="top:476px">RECENTLY PLAYED<s></s></div>
+  <div id="hd" class="abs"><h1><span id="ico">🌴</span><span id="ttl">Outlaster</span></h1><p id="by">By <span>Peak Precision Studios</span></p></div>
+
+  <div id="rail" class="abs"><div id="track"></div></div>
+  <div id="play" class="abs pop" style="--i:12">Quick Play</div>
+  <div id="age" class="abs pop" style="--i:12">All Ages</div>
+
+  <div id="disc" class="abs pop" style="--i:14"><b>DISCOVER MORE EXPERIENCES</b><div data-i="lucide:chevron-up"></div></div>
+  </div>
+
+  <div id="dpage" class="view off">
+    <div class="sec abs" style="top:173px">DISCOVER<s></s></div>
+    <div id="chips" class="abs"><div id="chipsIn"><div id="pill"></div></div></div>
+    <div id="sbox" class="abs"><div data-i="lucide:search"></div><input id="q" type="text" placeholder="Search experiences" spellcheck="false" autocomplete="off"><svg class="ol" viewBox="0 0 378 66"><rect class="sk" x="1.500" y="1.500" width="375" height="63" rx="31.500" pathLength="100"/></svg></div>
+    <div id="gridWrap" class="abs"><div id="grid"></div></div>
+  </div>
+</div>
+
+<script>
+/* ============ Roblox data layer ============
+   users.roblox.com/v1/users/authenticated            (cookie)  me
+   economy.roblox.com/v1/users/{id}/currency          (cookie)  robux
+   friends.roblox.com/v1/users/{id}/friends           friends
+   thumbnails.roblox.com/v1/users/avatar-headshot     headshots
+   apis.roblox.com/discovery-api/omni-recommendation  (cookie, POST) "Continue" sort = recently played
+   games.roblox.com/v1/games?universeIds=             name/creator/rootPlaceId
+   thumbnails.roblox.com/v1/games/multiget/thumbnails game thumbs
+   In Tauri: enable tauri-plugin-http + withGlobalTauri (requests go through Rust, no CORS). */
+/* Robux icon: tries ./robux.svg (save your file next to this html for offline use), then your link, then a drawn fallback */
+(function(){
+  const u=["robux.svg","https://static.wikia.nocookie.net/robloxs/images/5/50/Robux_2019_white.svg/revision/latest/scale-to-width-down/121?cb=20240730003432"];let k=0;
+  const img=new Image();img.width=img.height=40;img.style.cssText="width:40px;height:40px;display:block";img.draggable=false;
+  img.onerror=()=>{if(++k<u.length)img.src=u[k];else img.replaceWith(Object.assign(document.createElement("span"),{innerHTML:'<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="3.600" stroke-linejoin="round"><path d="M20 3l14.500 8.400v17.200L20 37 5.500 28.600V11.400z"/><rect x="14.500" y="14.500" width="11" height="11" rx="1.500"/></svg>'}))};
+  img.src=u[0];document.getElementById("rbi").append(img);
+})();
+/* Roblox logo: one full ease-in-out spin per hover. It always finishes; re-hovering after it ends spins again. */
+(function(){
+  const el=document.getElementById("logo");let spinning=false;
+  el.addEventListener("mouseenter",()=>{
+    if(spinning)return;spinning=true;
+    el.animate([{transform:"rotate(0deg)"},{transform:"rotate(360deg)"}],{duration:900,easing:"cubic-bezier(.65,0,.35,1)"}).onfinish=()=>{spinning=false};
+  });
+})();
+const cfg={cookie:localStorage.getItem("rbxCookie")||""};
+window.setRobloxCookie=c=>{localStorage.setItem("rbxCookie",c);location.reload()};
+let csrf="";
+async function rbx(url,o={}){
+  const f=window.__TAURI__?.http?.fetch||fetch,h={...(o.headers||{})};
+  if(cfg.cookie)h.Cookie=".ROBLOSECURITY="+cfg.cookie;
+  if(o.body)h["Content-Type"]="application/json";
+  for(let i=0;i<2;i++){
+    if(csrf)h["x-csrf-token"]=csrf;
+    const r=await f(url,{...o,headers:h});
+    if(r.status===403&&r.headers.get("x-csrf-token")){csrf=r.headers.get("x-csrf-token");continue}
+    if(!r.ok)throw new Error(r.status);
+    return r.json();
+  }
+  throw new Error("csrf");
+}
+const J=u=>rbx(u);
+async function loadReal(){
+  const me=await J("https://users.roblox.com/v1/users/authenticated");
+  const [cur,fr]=await Promise.all([J(`https://economy.roblox.com/v1/users/${me.id}/currency`).catch(()=>({robux:0})),J(`https://friends.roblox.com/v1/users/${me.id}/friends`)]);
+  const friends=fr.data.map(x=>({id:x.id,name:x.displayName,handle:x.name,ver:x.hasVerifiedBadge}));
+  const ids=[me.id,...friends.slice(0,10).map(x=>x.id)].join(",");
+  const th=await J(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${ids}&size=150x150&format=Png`);
+  const map=Object.fromEntries(th.data.map(x=>[x.targetId,x.imageUrl]));
+  friends.forEach(x=>x.img=map[x.id]);
+  const rec=await rbx("https://apis.roblox.com/discovery-api/omni-recommendation",{method:"POST",body:JSON.stringify({pageType:"Home",sessionId:crypto.randomUUID()})});
+  const sort=rec.sorts.find(s=>/continue/i.test(s.topic||s.topicId||""))||rec.sorts[0];
+  const uids=sort.recommendationList.filter(x=>x.contentType==="Game").slice(0,12).map(x=>x.contentId);
+  const [gd,gt]=await Promise.all([J(`https://games.roblox.com/v1/games?universeIds=${uids.join(",")}`),J(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${uids.join(",")}&countPerUniverse=1&size=768x432&format=Png`)]);
+  const img=Object.fromEntries(gt.data.map(x=>[x.universeId,x.thumbnails?.[0]?.imageUrl]));
+  const games=uids.map(id=>gd.data.find(g=>g.id===id)).filter(Boolean).map(g=>({name:g.name,by:g.creator.name,place:g.rootPlaceId,img:img[g.id]}));
+  return {me:{name:me.displayName,img:map[me.id],robux:cur.robux},friends,total:friends.length,games};
+}
+function demo(){
+  const F=[["Roblox","Roblox",1],["Builderman","Builderman",1],["milk74l8O","milk74l8O",1],["1ik","1ik",1],["Captide","Captide"],["Pixley","Pixleygon"],["Jack","DiscombobulatedJack"],["shlexr","shlexr"],["7kayoh","7kayoh"],["Julian","Julpavv"]];
+  const G=[["🌴 Outlaster","Peak Precision Studios","#7a2c14,#1c2a44"],["Greenville","Greenville Studios","#8e9aa6,#3b4a3a"],["Adopt Me!","Uplift Games","#f3c76b,#7fbf6a"],["Drive Cart","Studio Q","#3a5be0,#e0733a"],["Obby World","Obby Co","#4aa04a,#2b4a9a"]];
+  return {me:{name:"you",robux:1.2e9},friends:F.map(x=>({name:x[0],handle:x[1],ver:x[2]})),total:26,games:G.map(g=>({name:g[0],by:g[1],place:0,grad:g[2]}))};
+}
+/* Launch toast: Roblox logo (eased spin-then-pause loop) + "LAUNCHING..." slides in from the
+   right and back out, held for 6s. Shown for every launch, demo tiles included. */
+function launchToast(){
+  const t=$("#toast");t.classList.remove("on");void t.offsetWidth;
+  t.classList.add("on");
+}
+/* Launch = hand the experience to the installed Roblox Player through its official deep link.
+   Add &gameInstanceId=<jobId> to join one specific server. In Tauri v2 allow the roblox:// scheme in the opener plugin capability.
+   Demo tiles (no real place id) still show the launching toast, they just don't fire the deep link. */
+function launch(place,name){
+  launchToast();
+  if(!place)return;
+  const u=`roblox://experiences/start?placeId=${place}`,o=window.__TAURI__?.opener?.openUrl||window.__TAURI__?.shell?.open;
+  o?o(u):(location.href=u);
+}
+
+/* ============ Iconify icons ============
+   Every [data-i="set:name"] is filled from https://api.iconify.design/{set}.json?icons=...
+   and cached in localStorage so the app works offline after the first run.
+   For production: npm i @iconify-json/lucide @iconify-json/simple-icons and inline them at build time. */
+const L='<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">';
+const FB={ /* tiny offline fallbacks if the API is unreachable on first launch */
+ "lucide:chevron-up":L+'<path d="m18 15-6-6-6 6"/></g>',
+ "lucide:thumbs-up":L+'<path d="M7 10v12"/><path d="M15 5.880 14 10h5.830a2 2 0 0 1 1.920 2.560l-2.330 8A2 2 0 0 1 17.500 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.760a2 2 0 0 0 1.790-1.110L12 2a3.130 3.130 0 0 1 3 3.880Z"/></g>',
+ "lucide:users":L+'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.870"/><path d="M16 3.130a4 4 0 0 1 0 7.750"/></g>',
+ "lucide:search":L+'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.300-4.300"/></g>',
+ "lucide:check":L+'<path d="M20 6 9 17l-5-5"/></g>',
+ "lucide:settings":L+'<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8.500" stroke-dasharray="3 3.400"/></g>',
+ "simple-icons:roblox":'<rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor" transform="rotate(-14 12 12)"/><rect x="9.500" y="9.500" width="5" height="5" rx="1" fill="#1b1c31" transform="rotate(-14 12 12)"/>'
+};
+async function icons(){
+  const els=[...document.querySelectorAll("[data-i]:not([data-done])")],sets={};
+  els.forEach(n=>{const [p,i]=n.dataset.i.split(":");(sets[p]??=new Set).add(i)});
+  let cache={};try{cache=JSON.parse(localStorage.getItem("iconCache")||"{}")}catch{}
+  const f=window.__TAURI__?.http?.fetch||fetch;
+  await Promise.all(Object.entries(sets).map(async([p,s])=>{
+    const miss=[...s].filter(i=>!cache[p+":"+i]);if(!miss.length)return;
+    try{const r=await (await f(`https://api.iconify.design/${p}.json?icons=${miss.join(",")}`)).json();
+      for(const [k,v] of Object.entries(r.icons||{}))cache[p+":"+k]={b:v.body,w:v.width||r.width||24,h:v.height||r.height||24}}catch{}
+  }));
+  try{localStorage.setItem("iconCache",JSON.stringify(cache))}catch{}
+  els.forEach(n=>{const c=cache[n.dataset.i],b=c?.b||FB[n.dataset.i];if(!b)return;
+    n.innerHTML=`<svg viewBox="0 0 ${c?.w||24} ${c?.h||24}">${b}</svg>`;
+    n.querySelectorAll("path").forEach(p=>p.setAttribute("pathLength","100"));n.dataset.done=1});
+}
+
+/* ============ UI ============ */
+const $=s=>document.querySelector(s);
+const fmt=n=>n>=1e9?Math.floor(n/1e9)+"B+":n>=1e6?Math.floor(n/1e6)+"M+":n>=1e3?Math.floor(n/1e3)+"K+":String(n);
+const hue=s=>[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
+let S,sel=0,bgI=0,page="home";
+function fit(){const s=Math.min(innerWidth/1920,innerHeight/1080);$("#stage").style.transform=`translate(${(innerWidth-1920*s)/2}px,${(innerHeight-1080*s)/2}px) scale(${s})`}
+addEventListener("resize",fit);fit();
+const RING='<svg class="ol" viewBox="0 0 150 150"><circle class="sk" cx="75" cy="75" r="73.500" pathLength="100"/></svg>';
+
+function drawFriends(){
+  const box=$("#friends");box.innerHTML="";
+  S.friends.slice(0,10).forEach((f,i)=>{
+    const d=document.createElement("div");d.className="f pop";d.style.setProperty("--i",i+2);
+    const bg=f.img?"":`background:hsl(${hue(f.name)} 35% 28%)`;
+    d.innerHTML=`<div class="av" style="${bg}">${f.img?`<img src="${f.img}" alt="">`:""}${RING}${f.ver?'<div class="vb"><div data-i="lucide:check"></div></div>':""}</div><b>${f.name}</b><small>@${f.handle}</small>`;
+    box.append(d);
+  });
+  const left=S.total-10;
+  if(left>0){const d=document.createElement("div");d.className="f more pop";d.style.setProperty("--i",12);
+    d.innerHTML=`<div class="av"><div><strong>+${left}</strong><em>MORE</em></div>${RING}</div>`;box.append(d)}
+}
+function drawTiles(){
+  const tr=$("#track");tr.innerHTML="";
+  S.games.forEach((g,i)=>{
+    const t=document.createElement("div");t.className="t";t.style.setProperty("--i",i);t.style.left=(74+i*435)+"px";
+    const bg=!g.img&&g.grad?` style="background:linear-gradient(135deg,${g.grad})"`:"";
+    t.innerHTML=`<div class="c"${bg}>${g.img?`<img src="${g.img}" alt="${g.name}">`:""}</div><svg class="ol" viewBox="0 0 412 250"><rect class="sk" x="1.500" y="1.500" width="409" height="247" rx="28.500" pathLength="100"/></svg>`;
+    t.onclick=()=>i===sel?launch(g.place,g.name):select(i);
+    tr.append(t);
+  });
+}
+function select(i){
+  i=Math.max(0,Math.min(S.games.length-1,i));
+  const g=S.games[i];sel=i;
+  document.querySelectorAll(".t").forEach((t,k)=>t.classList.toggle("sel",k===i));
+  $("#track").style.transform=`translateX(${-i*435}px)`;
+  const m=g.name.match(/^(\p{Extended_Pictographic}\uFE0F?)\s*(.*)$/u);
+  $("#ico").textContent=m?m[1]:"";$("#ttl").textContent=m?m[2]:g.name;
+  $("#by").innerHTML=`By <span>${g.by}</span>`;
+  [$("#hd h1"),$("#by")].forEach((e,k)=>{e.classList.remove("sw");void e.offsetWidth;e.style.animationDelay=k*70+"ms";e.classList.add("sw")});
+  const layers=document.querySelectorAll("#bg i"),L2=layers[bgI^=1];
+  L2.style.backgroundImage=g.img?`url(${g.img})`:`linear-gradient(135deg,${g.grad||"#3a2418,#15162a"})`;
+  L2.classList.add("on");layers[bgI^1].classList.remove("on");
+}
+addEventListener("keydown",e=>{
+  if(page!=="home")return;
+  if(e.key==="ArrowRight")select(sel+1);
+  else if(e.key==="ArrowLeft")select(sel-1);
+  else if(e.key==="Enter")launch(S.games[sel]?.place,S.games[sel]?.name);
+});
+$("#play").onclick=()=>launch(S.games[sel]?.place,S.games[sel]?.name);
+
+/* ============ Pages ============ */
+function setPage(p){
+  if(p===page)return;page=p;
+  $("#home").classList.toggle("off",p!=="home");$("#dpage").classList.toggle("off",p!=="discover");
+  document.body.classList.toggle("disc",p==="discover");
+  document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("on",a.dataset.p===p));
+  if(p==="discover")openDiscover();
+}
+document.querySelectorAll("#nav a[data-p]").forEach(a=>a.addEventListener("click",()=>setPage(a.dataset.p)));
+$("#logo").addEventListener("click",()=>setPage("home"));
+$("#disc").addEventListener("click",()=>setPage("discover"));
+
+/* ============ Discover ============
+   Chips: your Home sorts from apis.roblox.com/discovery-api/omni-recommendation when a cookie is set,
+   otherwise keyword searches through apis.roblox.com/search-api/omni-search (public, returns universe ids).
+   Cards: games.roblox.com/v1/games (name, playing, rootPlaceId) + /games/votes + thumbnails multiget.
+   The omni-search response shape is read defensively (searchResults[].contents[]); log it once if cards come back empty. */
+const D={chips:[],active:0,req:0,ready:false,dragged:false},SID=crypto.randomUUID();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtN=n=>n>=1e6?(n/1e6).toFixed(1).replace(/\.0$/,"")+"M":n>=1e3?(n/1e3).toFixed(1).replace(/\.0$/,"")+"K":String(n);
+async function hydrate(ids){
+  if(!ids.length)return [];
+  const q=ids.join(",");
+  const [d,v,t]=await Promise.all([
+    J(`https://games.roblox.com/v1/games?universeIds=${q}`),
+    J(`https://games.roblox.com/v1/games/votes?universeIds=${q}`).catch(()=>({data:[]})),
+    J(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${q}&countPerUniverse=1&size=768x432&format=Png`).catch(()=>({data:[]}))]);
+  const vote=Object.fromEntries(v.data.map(x=>[x.id,x])),img=Object.fromEntries(t.data.map(x=>[x.universeId,x.thumbnails?.[0]?.imageUrl]));
+  return ids.map(id=>d.data.find(g=>g.id===id)).filter(Boolean).map(g=>{
+    const vt=vote[g.id]||{},tot=(vt.upVotes||0)+(vt.downVotes||0);
+    return {name:g.name,place:g.rootPlaceId,price:g.price||null,playing:g.playing||0,like:tot?Math.round(vt.upVotes/tot*100):null,img:img[g.id]}});
+}
+async function chipGames(c){
+  if(c.games)return c.games;
+  let ids=c.ids;
+  if(!ids&&c.sid){
+    const r=await rbx(`https://apis.roblox.com/explore-api/v1/get-sort-content?sessionId=${SID}&sortId=${encodeURIComponent(c.sid)}&device=computer&country=all`);
+    ids=(r.games||[]).map(g=>g.universeId||g.id);
+  }else if(!ids){
+    const r=await rbx(`https://apis.roblox.com/search-api/omni-search?searchQuery=${encodeURIComponent(c.q)}&sessionId=${SID}&pageType=all`);
+    ids=[];for(const grp of r.searchResults||[])for(const x of grp.contents||[])if(!x.contentType||x.contentType==="Game")ids.push(x.contentId||x.universeId);
+  }
+  ids=[...new Set((ids||[]).filter(Boolean))].slice(0,50);
+  return c.games=await hydrate(ids);
+}
+/* Category pills = the sorts from roblox.com/charts. Names are matched against explore-api/v1/get-sorts to get the real sortId,
+   and fall back to a slug of the name if a sort isn't returned. */
+const SORTS=["Top Trending","Up-and-Coming","Top Playing Now","Fun with Friends","Top Revisited","Top Earning","Top Paid Access","Top Rated","Most Popular","Trending Music Experiences","Trending in RPG","Trending in Sports & Racing","Trending in Shooter","Trending in Action","Trending in Adventure","Trending in Entertainment","Trending in Obby & Platformer","Trending in Party & Casual"];
+const slug=n=>n.toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+async function discoverChips(){
+  let api=[];
+  try{const r=await rbx(`https://apis.roblox.com/explore-api/v1/get-sorts?sessionId=${SID}&device=computer&country=all`);api=r.sorts||[]}catch{}
+  const norm=n=>String(n||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+  const map=Object.fromEntries(api.map(x=>[norm(x.sortDisplayName||x.displayName||x.name),x.sortId||x.id]));
+  return SORTS.map(n=>({name:n,sid:map[norm(n)]||slug(n)}));
+}
+function demoGames(seed){
+  const N=["Brookhaven","Blox Fruits","Tower of Hell","Murder Mystery 2","Pet Simulator","Jailbreak","Arsenal","Doors","Natural Disaster","Bee Swarm","Piggy","Mad City","Royale High","Tycoon Kingdom","Escape Run"],k=(seed*4)%N.length;
+  return N.slice(k).concat(N.slice(0,k)).map((n,i)=>({name:n,place:0,playing:(i*7919+seed*104729)%90000+800,price:seed===6?[799,250,1200,99][i%4]:null,like:80+(i*3+seed)%18,grad:`hsl(${(hue(n)+seed*25)%360} 55% 38%),hsl(${(hue(n)+90)%360} 45% 20%)`}));
+}
+function drawChips(){
+  const box=$("#chipsIn");box.querySelectorAll(".chip").forEach(c=>c.remove());
+  D.chips.forEach((c,i)=>{const e=document.createElement("div");e.className="chip";e.textContent=c.name;e.onclick=()=>{if(D.dragged)return;$("#q").value="";pickChip(i)};box.append(e)});fadeChips();
+}
+/* Hover push: neighboring chips slide away from whichever chip is hovered, falloff with distance.
+   The selected chip's white pill is a separate absolutely-positioned element synced to it, so
+   whatever push we give the active chip's text also gets applied to the pill, keeping them together. */
+(function(){
+  const box=$("#chipsIn");
+  const reset=()=>{box.querySelectorAll(".chip").forEach(c=>c.style.transform="");setPillPush(0)};
+  box.addEventListener("pointerover",e=>{
+    const chip=e.target.closest(".chip");if(!chip||D.dragged)return;
+    const chips=[...box.querySelectorAll(".chip")],hi=chips.indexOf(chip);
+    let activePush=0;
+    chips.forEach((c,i)=>{
+      if(i===hi){c.style.transform="";return}
+      const d=i-hi,push=Math.max(0,11-(Math.abs(d)-1)*4),signed=push?(d<0?-push:push):0;
+      c.style.transform=signed?`translateX(${signed}px)`:"";
+      if(i===D.active)activePush=signed;
+    });
+    setPillPush(activePush);
+  });
+  box.addEventListener("pointerleave",reset);
+})();
+let pillBase=0,pillPush=0;
+function setPillPush(px){pillPush=px;$("#pill").style.transform=`translateX(${pillBase+pillPush}px)`}
+function movePill(first){
+  const pill=$("#pill"),el=document.querySelectorAll(".chip");
+  el.forEach((c,i)=>c.classList.toggle("on",i===D.active));
+  const c=el[D.active];if(!c){pill.style.opacity=0;return}
+  if(first){pill.style.transition="none"}
+  c.parentNode&&$('#chips').scrollTo({left:Math.max(0,c.offsetLeft-($('#chips').clientWidth-c.offsetWidth)/2),behavior:first?'auto':'smooth'});
+  pillBase=c.offsetLeft;pillPush=0;
+  pill.style.width=c.offsetWidth+"px";pill.style.transform=`translateX(${pillBase}px)`;pill.style.opacity=1;
+  if(first){void pill.offsetWidth;pill.style.transition=""}
+}
+let swapTimer=null;
+function renderGrid(games,loading,q){
+  const g=$("#grid");
+  const build=()=>{
+    g.innerHTML="";$("#gridWrap").scrollTo({top:0,behavior:"instant"});
+    if(loading){
+      for(let i=0;i<10;i++)g.insertAdjacentHTML("beforeend",`<div class="g ld" style="--i:${i}"><div class="th"><div class="c"></div></div><b class="nm"></b><div class="mt"></div></div>`);
+    }else if(!games.length){
+      g.innerHTML=`<div id="empty">No experiences found${q?` for “${esc(q)}”`:""}<small>Try another search or pick a different category.</small></div>`;
+    }else{
+      games.forEach((x,i)=>{
+        const d=document.createElement("div");d.className="g";d.style.setProperty("--i",Math.min(i,14));
+        const bg=!x.img&&x.grad?` style="background:linear-gradient(135deg,${x.grad})"`:"";
+        d.innerHTML=`<div class="th"><div class="c"${bg}>${x.img?`<img src="${x.img}" alt="" loading="lazy" onload="this.classList.add('go')">`:""}${x.price?`<span class="pb"><svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"><path d="M20 3l14.500 8.400v17.200L20 37 5.500 28.600V11.400z"/><rect x="14.500" y="14.500" width="11" height="11" rx="1.500"/></svg>${x.price}</span>`:""}</div><svg class="ol" viewBox="0 0 356 209"><rect class="sk" x="1.500" y="1.500" width="353" height="206" rx="28.500" pathLength="100"/></svg></div><b class="nm">${esc(x.name)}</b><div class="mt">${x.like!=null?`<span><i data-i="lucide:thumbs-up"></i>${x.like}%</span>`:""}<span><i data-i="lucide:users"></i>${fmtN(x.playing)}${x.playing>=1000?"+":""}</span></div>`;
+        d.onclick=()=>launch(x.place,x.name);g.append(d);
+        const img=d.querySelector("img");if(img&&img.complete)img.classList.add("go");
+      });
+      icons();
+    }
+    requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.remove("swap")));
+  };
+  clearTimeout(swapTimer);
+  if(g.children.length){
+    g.classList.add("swap");
+    swapTimer=setTimeout(build,230);
+  }else{
+    build();
+  }
+}
+function fadeChips(){
+  const c=$("#chips"),l=c.scrollLeft>4,r=c.scrollLeft+c.clientWidth<c.scrollWidth-4;
+  c.style.setProperty("--ml",l?"56px":"0px");c.style.setProperty("--mr",r?"56px":"0px");
+}
+(function(){
+  const c=$("#chips");let down=false,x0=0,s0=0;
+  c.addEventListener("scroll",fadeChips,{passive:true});
+  c.addEventListener("wheel",e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){c.scrollLeft+=e.deltaY;e.preventDefault()}},{passive:false});
+  c.addEventListener("pointerdown",e=>{down=true;D.dragged=false;x0=e.clientX;s0=c.scrollLeft});
+  addEventListener("pointermove",e=>{if(!down)return;const dx=e.clientX-x0;if(Math.abs(dx)>6){D.dragged=true;c.classList.add("drag")}if(D.dragged)c.scrollLeft=s0-dx/(parseFloat($("#stage").style.transform.split("scale(")[1])||1)});
+  addEventListener("pointerup",()=>{down=false;c.classList.remove("drag");setTimeout(()=>D.dragged=false,0)});
+})();
+async function pickChip(i){
+  D.active=i;movePill();renderGrid([],true);
+  const my=++D.req;let g;
+  try{g=await chipGames(D.chips[i])}catch{g=demoGames(i)}
+  if(my===D.req)renderGrid(g);
+}
+async function runSearch(q){
+  q=q.trim();if(!q)return pickChip(Math.max(D.active,0));
+  D.active=-1;movePill();renderGrid([],true);
+  const my=++D.req;let g;
+  try{g=await chipGames({q})}catch{g=demoGames(3).filter(x=>x.name.toLowerCase().includes(q.toLowerCase()))}
+  if(my===D.req)renderGrid(g,false,q);
+}
+$("#q").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")runSearch(e.target.value);if(e.key==="Escape")e.target.blur()});
+async function openDiscover(){
+  if(D.ready)return;D.ready=true;
+  D.chips=await discoverChips();drawChips();icons();
+  D.active=0;movePill(true);await pickChip(0);
+}
+
+async function init(){
+  try{if(!cfg.cookie)throw 0;S=await loadReal()}catch(e){S=demo()}
+  $("#rb").textContent=fmt(S.me.robux);$("#meName").textContent=S.me.name;
+  if(S.me.img)$("#me").style.backgroundImage=`url(${S.me.img})`;
+  drawFriends();drawTiles();select(0);
+  icons();
+}
+init();
+</script>
+</body>
+</html>
